@@ -3,7 +3,13 @@
 This repository holds the analysis done by the UN OCHA Centre for Humanitarian
 Data on the SWAPS 2022 CDM surveys.
 
-## Data checking
+## Setup
+
+You will need access to the raw JSON files. Store and read them from a directory
+with `input` and `output` folders. Place the directory as an environmental
+variable `SWAPS_SUPPORT`.
+
+## Data checking and cleaning
 
 The first step is to help with the cleaning process by checking the current data
 against data collected in the previous year. 
@@ -65,3 +71,7 @@ for comparisons
 ### Manual cleaning
 
 These sheets are designed to be cleaned by the end user, and returned in the same format, after which analysis will be done direct from these sheets for 2022.
+
+## Data analysis
+
+Scripts to come.
