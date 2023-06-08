@@ -1,86 +1,13 @@
-library(tidyverse)
-library(jsonlite)
-library(openxlsx)
-
-input_dir <- file.path(
-  Sys.getenv("SWAPS_SUPPORT"),
-  "input"
-)
-
-output_dir <- file.path(
-  Sys.getenv("SWAPS_SUPPORT"),
-  "output"
-)
-
-# helper function to format worksheets
-# use integers to specify columns
-# use for single column
-format_2022_col <- function(wb, sheet, rows, col) {
-  # get reference for 1st previous column and starting row
-  prev_col <- int2col(col - 1)
-  curr_col <- int2col(col)
-  start_row <- rows[1]
-  rule <- paste0(
-    curr_col,
-    start_row,
-    "!=",
-    prev_col,
-    start_row
-  )
-
-  conditionalFormatting(
-    wb = wb,
-    sheet = sheet,
-    cols = col,
-    rows = rows,
-    rule = rule,
-    type = "expression"
-  )
-}
-
-# applies formatting across multiple columns
-# has to be done separately
-format_2022_cols <- function(wb, sheet, rows, cols) {
-  walk(
-    .x = cols,
-    .f = \(col) {
-      format_2022_col(
-        wb = wb,
-        sheet = sheet,
-        rows = rows,
-        col = col
-      )
-    }
-  )
-}
-
-# create sheet, write data and format at the same time
-# assume data has column names and first row of years
-write_swaps_data <- function(wb, sheet, df) {
-  # get dimensions of the data frame
-  years <- unlist(df[1,], use.names = FALSE)
-  cols <- which(years == 2022)
-  rows <- 3:(nrow(df) + 1) # need to account for adding headers as rows
-
-  addWorksheet(wb, sheet)
-  writeData(wb, sheet, df)
-  format_2022_cols(wb, sheet, rows, cols)
-}
-
-
-##########################
-#### LOAD INPUT JSONS ####
-##########################
-
-df_cluster <- read_json(
+source(
   file.path(
-    input_dir,
-    "CDM Survey Cluster Data extract 230601.json"
-  ),
-  simplifyVector = TRUE
-) %>%
-  pluck(1) %>%
-  as_tibble()
+    "clean_data",
+    "utils.R"
+  )
+)
+
+#########################
+#### LOAD INPUT JSON ####
+#########################
 
 df_iccg <- read_json(
   file.path(
@@ -122,19 +49,15 @@ df_iccg_wide <- df_iccg %>%
       .cols = everything(),
       .fns = as.character
     )
+  ) %>%
+  arrange(
+    IN_Operation
   )
 
-# create secondary row with year to prepare for notebooking for Excel
-iccg_years <- str_extract(names(df_iccg_wide), "([0-9]{4}$)")
-iccg_names <- names(df_iccg_wide)
-names(iccg_years) <- iccg_names
-df_iccg_wb <- add_row(df_iccg_wide, !!!iccg_years, .before = 1)
-names(df_iccg_wb) <- str_remove(iccg_names, "_[0-9]{4}$")
-
-write_swaps_data(
+write_swaps_yearly_data(
   wb = wb_iccg,
   sheet = "ICCG",
-  df = df_iccg_wb
+  df = df_iccg_wide
 )
 
 ############################
@@ -252,13 +175,7 @@ conditionalFormatting(
   sheet = "HCTOrg",
   rows = 1:nrow(df_hct_wb) + 1,
   cols = 12:13,
-  rule = 'J2<>""'
-)
-
-saveWorkbook(
-  wb = wb_iccg,
-  file = file.path(output_dir, "swaps_iccg_data.xlsx"),
-  overwrite = TRUE
+  rule = 'L2<>""'
 )
 
 ##################################
@@ -407,6 +324,11 @@ df_subgroups_wb <- df_subgroups_2022 %>%
   ) %>%
   select(
     -matches("[0-9]{4}$")
+  ) %>%
+  arrange(
+    IN_Operation,
+    year,
+    Theme
   )
 
 # save to a workbook
@@ -479,6 +401,11 @@ df_fmrrm_wb <- df_fmrrm_2022 %>%
   ) %>%
   mutate(
     org_check = replace_na(org_check, "Org not listed in 2022")
+  ) %>%
+  arrange(
+    IN_Operation,
+    year,
+    Name
   )
 
 # save to a workbook
