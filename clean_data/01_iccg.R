@@ -1,5 +1,6 @@
 library(tidyverse)
 library(jsonlite)
+library(openxlsx)
 
 input_dir <- file.path(
   Sys.getenv("SWAPS_SUPPORT"),
@@ -270,7 +271,7 @@ saveWorkbook(
 #### ICCG SUBGROUP: SUBGroups ####
 ##################################
 
-df_subgroup_chairs <- df_iccg %>%
+df_subgroups <- df_iccg %>%
   select(
     IN_Operation,
     submissionId,
@@ -340,7 +341,10 @@ df_subgroups_wb <- df_subgroups_2022 %>%
     by = c("IN_Operation", "Theme", "Report", "ReportOther"),
     relationship = "many-to-many"
   ) %>%
-  left_join(
+  mutate(
+    group_existed_2021 = replace_na(group_existed_2021, FALSE)
+  ) %>%
+  left_join( # find those chairs that exists in 2021
     df_subgroups_2021 %>%
       select(
         IN_Operation,
@@ -357,36 +361,379 @@ df_subgroups_wb <- df_subgroups_2022 %>%
     relationship = "many-to-many",
     by = c("IN_Operation", "Theme", "Report", "ReportOther", "ChairType", "ChairName", "ChairNameOther")
   ) %>%
-  bind_rows(
+  mutate(
+    chair_existed_2021 = ifelse(
+      group_existed_2021,
+      replace_na(chair_existed_2021, FALSE),
+      NA
+    )
+  ) %>%
+  bind_rows( # find those groups dropped in 2022
     anti_join(
       df_subgroups_2021,
       df_subgroups_2022,
       by = c("IN_Operation", "Theme", "Report", "ReportOther")
     ) %>%
       mutate(
-        dropped_2022 = TRUE
+        group_dropped_2022 = TRUE
+      )
+  )  %>%
+  bind_rows( # find chairs dropped in 2022
+    anti_join(
+      df_subgroups_2021,
+      df_subgroups_2022,
+      by = c("IN_Operation", "Theme", "Report", "ReportOther", "ChairType", "ChairName", "ChairNameOther")
+    ) %>%
+      semi_join( # only keep for groups kept in 2022
+        df_subgroups_2022,
+        by = c("IN_Operation", "Theme", "Report", "ReportOther")
+      ) %>%
+      mutate(
+        chair_dropped_2022 = TRUE
       )
   ) %>%
   mutate(
     subgroup_check = case_when(
-      dropped_2022 ~ "Subgroup was not listed in 2022",
+      group_dropped_2022 ~ "Subgroup was not listed in 2022",
       !group_existed_2021 ~ "Subgroup is new in 2022",
       TRUE ~ ""
     ),
-    chair_check = ifelse(
-      year == 2022
+    chair_check = case_when(
+      group_dropped_2022 | !group_existed_2021  ~ "",
+      chair_dropped_2022 ~ "Chair dropped in 2022",
+      !chair_existed_2021 ~ "Chair is new in 2022",
+      TRUE ~ ""
     )
+  ) %>%
+  select(
+    -matches("[0-9]{4}$")
   )
 
+# save to a workbook
+
+addWorksheet(
+  wb_iccg,
+  "SUBGroups"
+)
+
+writeData(
+  wb_iccg,
+  "SUBGroups",
+  df_subgroups_wb
+)
+
+conditionalFormatting(
+  wb = wb_iccg,
+  sheet = "SUBGroups",
+  rows = 1:nrow(df_subgroups_wb) + 1,
+  cols = 17:18,
+  rule = 'Q2<>""'
+)
 
 ##################################
 #### ICCG SUBGROUP: FRMRRMOrg ####
 ##################################
 
+df_fmrrm <- df_iccg %>%
+  select(
+    IN_Operation,
+    submissionId,
+    year,
+    FRMRRMOrg
+  ) %>%
+  unnest(
+    FRMRRMOrg
+  ) %>%
+  rename_with(
+    .fn = \(x) str_remove(x, "^FRM_RRMOrg"),
+    .cols = everything()
+  ) %>%
+  type_convert() %>%
+  filter(
+    !is.na(Role)
+  )
+
+df_fmrrm_2021 <- filter(df_fmrrm, year == 2021)
+df_fmrrm_2022 <- filter(df_fmrrm, year == 2022)
+
+df_fmrrm_wb <- df_fmrrm_2022 %>%
+  left_join(
+    df_fmrrm_2021 %>%
+      select(
+        -year, -submissionId, -Calc
+      ) %>%
+      mutate(
+        org_check = ""
+      ),
+    by = c("IN_Operation", "Role", "Type", "Name", "NameOther")
+  ) %>%
+  mutate(
+    org_check = replace_na(org_check, "New Org in 2022")
+  ) %>%
+  bind_rows(
+    anti_join(
+      df_fmrrm_2021,
+      df_fmrrm_2022,
+      by = c("IN_Operation", "Role", "Type", "Name", "NameOther")
+    )
+  ) %>%
+  mutate(
+    org_check = replace_na(org_check, "Org not listed in 2022")
+  )
+
+# save to a workbook
+
+addWorksheet(
+  wb_iccg,
+  "FMRRMOrg"
+)
+
+writeData(
+  wb_iccg,
+  "FMRRMOrg",
+  df_fmrrm_wb
+)
+
+conditionalFormatting(
+  wb = wb_iccg,
+  sheet = "FMRRMOrg",
+  rows = 1:nrow(df_fmrrm_wb) + 1,
+  cols = 8:9,
+  rule = 'H2<>""'
+)
+
 #####################################
 #### ICCG SUBGROUP: HCTSubnatLoc ####
 #####################################
 
+df_hct_subnat <- df_iccg %>%
+  select(
+    IN_Operation,
+    submissionId,
+    year,
+    HCTSubnatLoc
+  ) %>%
+  unnest(
+    HCTSubnatLoc
+  ) %>%
+  rename_with(
+    .fn = \(x) str_remove(x, "^HCT_SubnatLoc"),
+    .cols = everything()
+  ) %>%
+  type_convert() %>%
+  filter(
+    !is.na(City)
+  )
+
+df_hct_subnat_2021 <- filter(df_hct_subnat, year == 2021)
+df_hct_subnat_2022 <- filter(df_hct_subnat, year == 2022)
+
+df_hct_subnat_wb <- df_hct_subnat_2022 %>%
+  left_join(
+    df_hct_subnat_2021 %>%
+      distinct(
+        IN_Operation,
+        City,
+        CityOther,
+        Area
+      ) %>%
+      mutate(
+        subnat_existed_2021 = TRUE
+      ),
+    by = c("IN_Operation", "City", "CityOther", "Area")
+  ) %>%
+  left_join(
+    df_hct_subnat_2021 %>%
+      select(
+        -year, -submissionId, -Calc
+      ) %>%
+      mutate(
+        subnat_details_matched_2021 = TRUE
+      ),
+    by = c("IN_Operation", "City", "CityOther", "Area", "Chair", "ChairOther", "NTA", "DNR")
+  ) %>%
+  mutate(
+    subnat_check = case_when(
+      subnat_details_matched_2021 ~ "",
+      subnat_existed_2021 ~ "Subnat details differ in 2021",
+      TRUE ~ "Subnat location is new in 2022"
+    )
+  ) %>%
+  bind_rows(
+    anti_join(
+      df_hct_subnat_2021,
+      df_hct_subnat_2022,
+      by = c("IN_Operation", "City", "CityOther", "Area")
+    ) %>%
+      mutate(
+        subnat_check = "Subnat location dropped in 2022"
+      )
+  ) %>%
+  bind_rows(
+    anti_join(
+      df_hct_subnat_2021,
+      df_hct_subnat_2022,
+      by = c("IN_Operation", "City", "CityOther", "Area", "Chair", "ChairOther", "NTA", "DNR")
+    ) %>%
+      semi_join(
+        df_hct_subnat_2022,
+        by = c("IN_Operation", "City", "CityOther", "Area")
+      ) %>%
+      mutate(
+        subnat_check = "Subnat details changed in 2022"
+      )
+  ) %>%
+  select(
+    -subnat_existed_2021,
+    -subnat_details_matched_2021
+  ) %>%
+  arrange(
+    IN_Operation,
+    year,
+    City,
+    Area
+  )
+
+# save to a workbook
+
+addWorksheet(
+  wb_iccg,
+  "HCTSubnatLoc"
+)
+
+writeData(
+  wb_iccg,
+  "HCTSubnatLoc",
+  df_hct_subnat_wb
+)
+
+conditionalFormatting(
+  wb = wb_iccg,
+  sheet = "HCTSubnatLoc",
+  rows = 1:nrow(df_hct_subnat_wb) + 1,
+  cols = 12,
+  rule = 'L2<>""'
+)
+
 #####################################
 #### ICCG SUBGROUP: ICCSubnatLoc ####
 #####################################
+
+df_icc_subnat <- df_iccg %>%
+  select(
+    IN_Operation,
+    submissionId,
+    year,
+    ICCSubnatLoc
+  ) %>%
+  unnest(
+    ICCSubnatLoc
+  ) %>%
+  rename_with(
+    .fn = \(x) str_remove(x, "^ICC_SubnatLoc"),
+    .cols = everything()
+  ) %>%
+  type_convert() %>%
+  filter(
+    !is.na(City)
+  )
+
+df_icc_subnat_2021 <- filter(df_icc_subnat, year == 2021)
+df_icc_subnat_2022 <- filter(df_icc_subnat, year == 2022)
+
+df_icc_subnat_wb <- df_icc_subnat_2022 %>%
+  left_join(
+    df_icc_subnat_2021 %>%
+      distinct(
+        IN_Operation,
+        City,
+        CityOther,
+        Area
+      ) %>%
+      mutate(
+        subnat_existed_2021 = TRUE
+      ),
+    by = c("IN_Operation", "City", "CityOther", "Area")
+  ) %>%
+  left_join(
+    df_icc_subnat_2021 %>%
+      select(
+        -year, -submissionId, -Calc
+      ) %>%
+      mutate(
+        subnat_details_matched_2021 = TRUE
+      ),
+    by = c("IN_Operation", "City", "CityOther", "Area", "Chair", "ChairOther", "NTA", "DNR")
+  ) %>%
+  mutate(
+    subnat_check = case_when(
+      subnat_details_matched_2021 ~ "",
+      subnat_existed_2021 ~ "Subnat details differ in 2021",
+      TRUE ~ "Subnat location is new in 2022"
+    )
+  ) %>%
+  bind_rows(
+    anti_join(
+      df_icc_subnat_2021,
+      df_icc_subnat_2022,
+      by = c("IN_Operation", "City", "CityOther", "Area")
+    ) %>%
+      mutate(
+        subnat_check = "Subnat location dropped in 2022"
+      )
+  ) %>%
+  bind_rows(
+    anti_join(
+      df_icc_subnat_2021,
+      df_icc_subnat_2022,
+      by = c("IN_Operation", "City", "CityOther", "Area", "Chair", "ChairOther", "NTA", "DNR")
+    ) %>%
+      semi_join(
+        df_icc_subnat_2022,
+        by = c("IN_Operation", "City", "CityOther", "Area")
+      ) %>%
+      mutate(
+        subnat_check = "Subnat details changed in 2022"
+      )
+  ) %>%
+  select(
+    -subnat_existed_2021,
+    -subnat_details_matched_2021
+  ) %>%
+  arrange(
+    IN_Operation,
+    year,
+    City,
+    Area
+  )
+
+# save to a workbook
+
+addWorksheet(
+  wb_iccg,
+  "ICCSubnatLoc"
+)
+
+writeData(
+  wb_iccg,
+  "ICCSubnatLoc",
+  df_icc_subnat_wb
+)
+
+conditionalFormatting(
+  wb = wb_iccg,
+  sheet = "ICCSubnatLoc",
+  rows = 1:nrow(df_icc_subnat_wb) + 1,
+  cols = 12,
+  rule = 'L2<>""'
+)
+
+################################
+#### SAVING ENTIRE WORKBOOK ####
+################################
+
+saveWorkbook(
+  wb = wb_iccg,
+  file = file.path(output_dir, "swaps_iccg_data.xlsx"),
+  overwrite = TRUE
+)
