@@ -69,7 +69,7 @@ write_swaps_yearly_data <- function(wb, sheet, df) {
   names(df_wb) <- str_remove(df_names, "_[0-9]{4}$")
 
   # get dimensions of the data frame
-  years <- unlist(df_wb[1,], use.names = FALSE)
+  years <- unlist(df_wb[1, ], use.names = FALSE)
   cols <- which(years == 2022)
   rows <- 3:(nrow(df) + 1) # need to account for adding headers as rows
 
@@ -77,34 +77,3 @@ write_swaps_yearly_data <- function(wb, sheet, df) {
   writeData(wb, sheet, df_wb)
   format_2022_cols(wb, sheet, rows, cols)
 }
-
-
-
-
-#' read_all_tabs from excel file
-#'
-#' @param fp \code{character} file path
-#' @param skip \code{numeric} Minimum number of rows to skip before reading anything, be it column names or data. Leading empty rows are automatically skipped, so this is a lower bound. Ignored if range is given.
-#'
-#' @return list of data.frames
-#'
-
-read_all_tabs <- function(fp,clean_names=T,skip=1,col_names=T, sheet_names=NULL){
-  if(is.null(sheet_names)){
-    sheet_names <- readxl::excel_sheets(fp)
-  }
-  sheet_names %>%
-    purrr::map(
-      \(x){
-        ret <- readxl::read_xlsx(path = fp,sheet = x,skip=skip,col_names = col_names)
-        if(clean_names){
-          ret <- ret %>% janitor::clean_names()
-        }
-        return(ret)
-
-      }
-    ) %>%
-    set_names(sheet_names)
-}
-
-
