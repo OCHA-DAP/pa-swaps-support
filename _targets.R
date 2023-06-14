@@ -27,10 +27,15 @@ tar_source()
 # source("other_functions.R") # Source other scripts as needed. # nolint
 
 # Define file paths
-iccg_fp <- file.path(
+iccg_data_fp <- file.path(
   Sys.getenv("SWAPS_SUPPORT"),
   "output",
   "swaps_iccg_data.xlsx"
+)
+clusters_data_fp <- file.path(
+  Sys.getenv("SWAPS_SUPPORT"),
+  "output",
+  "swaps_clusters_data.xlsx"
 )
 
 # Replace the target list below with your own:
@@ -38,13 +43,24 @@ list(
 
   # track input files -- downstream targets don't need to change unless file changes or operations change
   tar_target(
-    name =  iccg_file,
-    command = iccg_fp,
+    name = iccg_file,
+    command = iccg_data_fp,
     format = "file"
   ),
-  # load iccg wb with some basic cleaning on names. Return list of dfs
+  tar_target(
+    name = clusters_data_file,
+    command = clusters_data_fp,
+    format = "file"
+  ),
+
+  # load iccg workbooks with names cleaned up
   tar_target(
     name = iccg_clean,
-    command = load_iccg_wb(fp = iccg_file)
+    command = load_swaps(fp = iccg_file)
+  ),
+  # load clusters workbooks with names cleaned up
+  tar_target(
+    name = clusters_clean,
+    command = load_swaps(fp = clusters_data_file)
   )
 )

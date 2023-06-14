@@ -6,14 +6,14 @@
 #' @return list of data.frames
 #'
 
-read_all_tabs <- function(fp, clean_names = T, skip = 1, col_names = T, sheet_names = NULL) {
+read_all_tabs <- function(fp, clean_names = T, skip = 1, col_names = T, sheet_names = NULL, .name_repair = "unique") {
   if (is.null(sheet_names)) {
     sheet_names <- readxl::excel_sheets(fp)
   }
   sheet_names %>%
     purrr::map(
       \(x){
-        ret <- readxl::read_xlsx(path = fp, sheet = x, skip = skip, col_names = col_names)
+        ret <- readxl::read_xlsx(path = fp, sheet = x, skip = skip, col_names = col_names, .name_repair = .name_repair)
         if (clean_names) {
           ret <- ret %>% janitor::clean_names()
         }
