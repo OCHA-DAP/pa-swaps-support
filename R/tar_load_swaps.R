@@ -1,4 +1,4 @@
-load_swaps <- function(fp = iccg_fp) {
+load_swaps <- function(fp = clusters_data_fp) {
   # ICCG tab has different format headers - so read in w/ colnames and rename
   df_list <- read_all_tabs(
     fp = fp,
