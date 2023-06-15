@@ -253,8 +253,8 @@ df_subgroups_wb <- df_subgroups_2022 %>%
         Report,
         ReportOther
       ) %>% mutate(
-      group_existed_2021 = TRUE
-    ),
+        group_existed_2021 = TRUE
+      ),
     by = c("IN_Operation", "Theme", "Report", "ReportOther"),
     relationship = "many-to-many"
   ) %>%
@@ -294,7 +294,7 @@ df_subgroups_wb <- df_subgroups_2022 %>%
       mutate(
         group_dropped_2022 = TRUE
       )
-  )  %>%
+  ) %>%
   bind_rows( # find chairs dropped in 2022
     anti_join(
       df_subgroups_2021,
@@ -316,7 +316,7 @@ df_subgroups_wb <- df_subgroups_2022 %>%
       TRUE ~ ""
     ),
     chair_check = case_when(
-      group_dropped_2022 | !group_existed_2021  ~ "",
+      group_dropped_2022 | !group_existed_2021 ~ "",
       chair_dropped_2022 ~ "Chair dropped in 2022",
       !chair_existed_2021 ~ "Chair is new in 2022",
       TRUE ~ ""
