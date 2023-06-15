@@ -25,7 +25,6 @@ load_swaps <- function(fp = clusters_data_fp) {
         colnames(dft) <- new_name
         dft <- dft[2:nrow(dft), ]
       }
-      dft %>%
-        clean_names()
+      return(dft)
     })
 }
