@@ -12,8 +12,8 @@ tar_source()
 
 list(
 
-# Track input files -------------------------------------------------------
-# this way if the files change targets will get re-run
+  # Track input files -------------------------------------------------------
+  # this way if the files change targets will get re-run
   tar_target(
     name = iccg_file,
     command = file.path(
@@ -34,17 +34,17 @@ list(
   ),
   tar_target(
     name = iccg_tool_file,
-    command = file.path(Sys.getenv("SWAPS_SUPPORT"),"CDM2022-HCTICCG_XLSForms_V1.0.xlsx"),
+    command = file.path(Sys.getenv("SWAPS_SUPPORT"), "CDM2022-HCTICCG_XLSForms_V1.0.xlsx"),
     format = "file"
   ),
   tar_target(
     name = cluster_tool_file,
-    command = file.path(Sys.getenv("SWAPS_SUPPORT"),"CDM2022-ClusterSector_XLSForms_V1.0.xlsx"),
+    command = file.path(Sys.getenv("SWAPS_SUPPORT"), "CDM2022-ClusterSector_XLSForms_V1.0.xlsx"),
     format = "file"
   ),
 
-# Read Data ---------------------------------------------------------------
-## Data sets to Analyze ####
+  # Read Data ---------------------------------------------------------------
+  ## Data sets to Analyze ####
   tar_target(
     name = iccg_clean,
     command = load_swaps(fp = iccg_file)
@@ -54,35 +54,41 @@ list(
     name = clusters_clean,
     command = load_swaps(fp = clusters_data_file)
   ),
-## Tools ####
+  ## Tools ####
   tar_target(
     name = tool_iccg,
-    command= read_all_tabs(fp = iccg_tool_file,
-                           clean_names = F,
-                           skip=0,
-                           sheet_names = c("survey","choices")
-                           )
-    ),
+    command = read_all_tabs(
+      fp = iccg_tool_file,
+      clean_names = F,
+      skip = 0,
+      sheet_names = c("survey", "choices")
+    )
+  ),
   tar_target(
     name = tool_clusters,
-    command= read_all_tabs(fp = cluster_tool_file,
-                           clean_names = F,
-                           skip=0,
-                           sheet_names = c("survey","choices")
-                           )
-    ),
+    command = read_all_tabs(
+      fp = cluster_tool_file,
+      clean_names = F,
+      skip = 0,
+      sheet_names = c("survey", "choices")
+    )
+  ),
 
-# Map data to Kobo Tool Question Types ------------------------------------
+  # Map data to Kobo Tool Question Types ------------------------------------
   tar_target(
     name = iccg_by_qtype,
-    command= map_data_to_type(df_list = iccg_clean,
-                              tool = tool_iccg,
-                              keep_cols=c("IN_Operation","submissionId","year"))
-    ),
+    command = map_data_to_type(
+      df_list = iccg_clean,
+      tool = tool_iccg,
+      keep_cols = c("IN_Operation", "submissionId", "year")
+    )
+  ),
   tar_target(
     name = clusters_by_qtype,
-    command= map_data_to_type(df_list = clusters_clean,
-                              tool = tool_clusters,
-                              keep_cols=c("IN_Operation","submissionId","year"))
+    command = map_data_to_type(
+      df_list = clusters_clean,
+      tool = tool_clusters,
+      keep_cols = c("IN_Operation", "submissionId", "year")
     )
+  )
 )

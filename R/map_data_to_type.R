@@ -1,5 +1,3 @@
-
-
 #' map_data_to_type
 #' @description
 #' takes workbook list and tool and maps each column to a question type ("sm","so","num").
@@ -21,22 +19,19 @@
 #' library(targets)
 #' tar_load(iccg_clean)
 #' tar_load(tool_iccg)
-#' map_data_to_type(df_list = iccg_clean,tool = tool_iccg)
+#' map_data_to_type(df_list = iccg_clean, tool = tool_iccg)
 #' }
-
 map_data_to_type <- function(df_list,
                              tool,
-                             keep_cols=c("IN_Operation","submissionId","year")
-                             ){
-  rgx_by_type<- get_q_rgx(df_list = df_list,tool = tool)
+                             keep_cols = c("IN_Operation", "submissionId", "year")) {
+  rgx_by_type <- get_q_rgx(df_list = df_list, tool = tool)
   df_list %>%
     map(
       \(dft){
         rgx_by_type %>%
           map(\(rgx)
-              dft %>%
-                select(any_of(keep_cols),matches(rgx))
-          )
+          dft %>%
+            select(any_of(keep_cols), matches(rgx)))
       }
     )
 }
@@ -56,15 +51,17 @@ map_data_to_type <- function(df_list,
 #' @export
 #'
 #' @examples
-get_subgroup_name_rgx <- function(df_list){
+get_subgroup_name_rgx <- function(df_list) {
   # gnarly rgx modified from BARD
   put_underscore_before <- str_extract(names(df_list), "\\w{1}[a-z]")
 
-  underscore_inserted <- str_replace(string = names(df_list),
-                               pattern = put_underscore_before,
-                               replacement = paste0("_", put_underscore_before))
+  underscore_inserted <- str_replace(
+    string = names(df_list),
+    pattern = put_underscore_before,
+    replacement = paste0("_", put_underscore_before)
+  )
   underscore_inserted <- underscore_inserted[!is.na(underscore_inserted)]
-  subgroup_rgx <- paste(paste0("^",underscore_inserted),collapse = "|")
+  subgroup_rgx <- paste(paste0("^", underscore_inserted), collapse = "|")
   return(subgroup_rgx)
 }
 
@@ -80,22 +77,23 @@ get_subgroup_name_rgx <- function(df_list){
 #'
 #' @return regex pattern that can be used select columns by type from data format we have in output folder
 
-get_q_rgx <- function(df_list,tool){
+get_q_rgx <- function(df_list, tool) {
   subgroup_rm_rgx <- get_subgroup_name_rgx(df_list)
 
-  qtypes_extract <- list(so= "^select_one",
-                         sm="^select_multiple",
-                         num=c("integer|calculate"))
+  qtypes_extract <- list(
+    so = "^select_one",
+    sm = "^select_multiple",
+    num = c("integer|calculate")
+  )
   qtypes_extract %>%
     map(
       \(qtype){
         q_names <- tool$survey %>%
-          filter(str_detect(type,qtype)) %>%
+          filter(str_detect(type, qtype)) %>%
           pull(name)
-        q_name_subgroup_rm <- str_remove(string = q_names,subgroup_rm_rgx)
-        q_name_rgx <- paste(paste0("*",q_name_subgroup_rm,"*"), collapse = "|")
+        q_name_subgroup_rm <- str_remove(string = q_names, subgroup_rm_rgx)
+        q_name_rgx <- paste(paste0("*", q_name_subgroup_rm, "*"), collapse = "|")
         return(q_name_rgx)
       }
     )
 }
-
