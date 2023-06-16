@@ -39,7 +39,7 @@ list(
   ),
   tar_target(
     name = cluster_tool_file,
-    command = file.path(Sys.getenv("SWAPS_SUPPORT"),"CDM2022-HCTICCG_XLSForms_V1.0.xlsx"),
+    command = file.path(Sys.getenv("SWAPS_SUPPORT"),"CDM2022-ClusterSector_XLSForms_V1.0.xlsx"),
     format = "file"
   ),
 
