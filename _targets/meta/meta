@@ -1,8 +1,12 @@
 name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iteration|parent|children|seconds|warnings|error
 cluster_tool_file|stem|cdcb86acc667375f|9cf4425598d63391|a532b606f052f163|415615063|/Users/zackarno/Library/CloudStorage/GoogleDrive-Zachary.arno@humdata.org/Shared drives/Predictive Analytics/SWAPS Support/2023_support/CDM2022-ClusterSector_XLSForms_V1.0.xlsx|t19502.3671364352s|c3b56309db5816e7|203354|file|local|vector|||0.001||
+clusters_by_qtype|stem|98987d10b3ea7504|070d4a2be6c5544b|577dedf847b51cea|719284658||t19524.4407806435s|105412e72442d7ce|255575|rds|local|vector|||0.144||
 clusters_clean|stem|0bdb1e59ba68d377|9c2d8c3311397cfa|1c7b8d61dff7c162|21588182||t19524.3446831116s|944ce9b583565842|562098|rds|local|vector|||0.521||
 clusters_data_file|stem|f1546871a35f024a|26dbbf47fd14c2bd|a532b606f052f163|-1304879222|/Users/zackarno/Library/CloudStorage/GoogleDrive-Zachary.arno@humdata.org/Shared drives/Predictive Analytics/SWAPS Support/2023_support/output/swaps_clusters_data.xlsx|t19516.6818460301s|b72793cd956a02d1|1971226|file|local|vector|||0||
 clusters_data_fp|object|7acfea71c43ee05b|||||||||||||||
+get_q_rgx|function|10389abbfa17fd5c|||||||||||||||
+get_subgroup_name_rgx|function|d18505f493633fe4|||||||||||||||
+iccg_by_qtype|stem|f355de9b9f8fddc7|30a37dfa5b00e21a|15ce6131da530941|-2042466529||t19524.4407772074s|7626049e23dd78ab|112538|rds|local|vector|||0.059||
 iccg_clean|stem|ba02b9de4110f2c6|1493008e4990b0cf|c3917e9f95ec51e4|-1629508772||t19524.3446861327s|ae9069317d5f6912|154272|rds|local|vector|||0.234||
 iccg_data_fp|object|df1a40afd00ada33|||||||||||||||
 iccg_file|stem|6b7984c8eedc7fa2|6f13f6fcc7cdc718|a532b606f052f163|290652339|/Users/zackarno/Library/CloudStorage/GoogleDrive-Zachary.arno@humdata.org/Shared drives/Predictive Analytics/SWAPS Support/2023_support/output/swaps_iccg_data.xlsx|t19516.6837539005s|a8ae5f6d9a515c98|331438|file|local|vector|||0||
@@ -10,6 +14,7 @@ iccg_fp|object|df1a40afd00ada33|||||||||||||||
 iccg_tool_file|stem|43306ba5cb4e80ef|5f8f90fa0753ec0e|a532b606f052f163|1730898028|/Users/zackarno/Library/CloudStorage/GoogleDrive-Zachary.arno@humdata.org/Shared drives/Predictive Analytics/SWAPS Support/2023_support/CDM2022-HCTICCG_XLSForms_V1.0.xlsx|t19524.3126359722s|87b63ac157fddb30|142306|file|local|vector|||0||
 load_iccg_wb|function|e97f8b81c7d8718c|||||||||||||||
 load_swaps|function|f8d80b7e36bdce00|||||||||||||||
+map_data_to_type|function|a1c6b6d8168103fb|||||||||||||||
 read_all_tabs|function|3eb60a299aedb402|||||||||||||||
 tool_clusters|stem|61cbb9b4c68c3e23|cf7e9b6a1f254fe4|d0b5a801696ecafc|803074268||t19524.3510088228s|ff6c64288287c900|55329|rds|local|vector|||0.064||
 tool_iccg|stem|8e40b048e6ccc78b|988614bdba32bd59|05a92d0fc99e2c71|847372695||t19524.3410162004s|6a5502aed853ab52|39073|rds|local|vector|||0.041||

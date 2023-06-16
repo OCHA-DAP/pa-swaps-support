@@ -70,5 +70,19 @@ list(
                            skip=0,
                            sheet_names = c("survey","choices")
                            )
+    ),
+
+# Map data to Kobo Tool Question Types ------------------------------------
+  tar_target(
+    name = iccg_by_qtype,
+    command= map_data_to_type(df_list = iccg_clean,
+                              tool = tool_iccg,
+                              keep_cols=c("IN_Operation","submissionId","year"))
+    ),
+  tar_target(
+    name = clusters_by_qtype,
+    command= map_data_to_type(df_list = clusters_clean,
+                              tool = tool_clusters,
+                              keep_cols=c("IN_Operation","submissionId","year"))
     )
 )
