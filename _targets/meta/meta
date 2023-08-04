@@ -7,9 +7,13 @@ iccg_clean|stem|ba02b9de4110f2c6|1493008e4990b0cf|c3917e9f95ec51e4|-1629508772||
 iccg_data_fp|object|df1a40afd00ada33|||||||||||||||
 iccg_file|stem|6b7984c8eedc7fa2|6f13f6fcc7cdc718|a532b606f052f163|290652339|/Users/zackarno/Library/CloudStorage/GoogleDrive-Zachary.arno@humdata.org/Shared drives/Predictive Analytics/SWAPS Support/2023_support/output/swaps_iccg_data.xlsx|t19516.6837539005s|a8ae5f6d9a515c98|331438|file|local|vector|||0||
 iccg_fp|object|df1a40afd00ada33|||||||||||||||
-iccg_tool_file|stem|43306ba5cb4e80ef|5f8f90fa0753ec0e|a532b606f052f163|1730898028|/Users/zackarno/Library/CloudStorage/GoogleDrive-Zachary.arno@humdata.org/Shared drives/Predictive Analytics/SWAPS Support/2023_support/CDM2022-HCTICCG_XLSForms_V1.0.xlsx|t19524.3126359722s|87b63ac157fddb30|142306|file|local|vector|||0||
+iccg_tool_file|stem|2b6ff3ac3b0dde2f|5f8f90fa0753ec0e|a532b606f052f163|1730898028|/Users/zackarno/Library/CloudStorage/GoogleDrive-Zachary.arno@humdata.org/Shared drives/Predictive Analytics/SWAPS Support/2023_support/CDM2022-HCTICCG_XLSForms_V1.0.xlsx|t19524.620504164s|5e537ac763c6e416|140977|file|local|vector|||0.001||
 load_iccg_wb|function|e97f8b81c7d8718c|||||||||||||||
 load_swaps|function|f8d80b7e36bdce00|||||||||||||||
+numeric_vars_by_sheet|function|146633525cbe53f7|||||||||||||||
 read_all_tabs|function|3eb60a299aedb402|||||||||||||||
+so_vars_by_sheet|function|88613efcae239f92|||||||||||||||
+so_vars_clusters|stem|9931d413cc08a491|3fd42d09d20439ef|8ed114d85863849d|325062017||t19527.3916304291s|4dbb6406b3cf089d|1366|rds|local|vector|||0.338|1m22mThere were 391 warnings in summarise.The first warning was1m22m36mℹ39m In argument across.cols  everything, functioncoltemp maxcoltemp,  na.rm  T.Caused by warning in max33m39m no nonmissing arguments to max returning Inf1m22m36mℹ39m Run dplyrlast_dplyr_warnings to see the 390 remaining warnings.|
+so_vars_iccg|stem|98913de4b3b290b3|c10cd460a218bad9|9babcaccecc42ea2|2014485242||t19527.3916326795s|17811d0c39000485|985|rds|local|vector|||0.183|1m22mThere were 222 warnings in summarise.The first warning was1m22m36mℹ39m In argument across.cols  everything, functioncoltemp maxcoltemp,  na.rm  T.Caused by warning in max33m39m no nonmissing arguments to max returning Inf1m22m36mℹ39m Run dplyrlast_dplyr_warnings to see the 221 remaining warnings.|
 tool_clusters|stem|61cbb9b4c68c3e23|cf7e9b6a1f254fe4|d0b5a801696ecafc|803074268||t19524.3510088228s|ff6c64288287c900|55329|rds|local|vector|||0.064||
-tool_iccg|stem|8e40b048e6ccc78b|988614bdba32bd59|05a92d0fc99e2c71|847372695||t19524.3410162004s|6a5502aed853ab52|39073|rds|local|vector|||0.041||
+tool_iccg|stem|8e40b048e6ccc78b|988614bdba32bd59|1f5a704a71f0159a|847372695||t19527.3916256401s|6a5502aed853ab52|39073|rds|local|vector|||0.045||

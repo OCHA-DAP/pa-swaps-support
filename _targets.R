@@ -12,8 +12,8 @@ tar_source()
 
 list(
 
-# Track input files -------------------------------------------------------
-# this way if the files change targets will get re-run
+  # Track input files -------------------------------------------------------
+  # this way if the files change targets will get re-run
   tar_target(
     name = iccg_file,
     command = file.path(
@@ -43,8 +43,8 @@ list(
     format = "file"
   ),
 
-# Read Data ---------------------------------------------------------------
-## Data sets to Analyze ####
+  # Read Data ---------------------------------------------------------------
+  ## Data sets to Analyze ####
   tar_target(
     name = iccg_clean,
     command = load_swaps(fp = iccg_file)
@@ -54,21 +54,31 @@ list(
     name = clusters_clean,
     command = load_swaps(fp = clusters_data_file)
   ),
-## Tools ####
+  ## Tools ####
   tar_target(
     name = tool_iccg,
     command= read_all_tabs(fp = iccg_tool_file,
                            clean_names = F,
                            skip=0,
                            sheet_names = c("survey","choices")
-                           )
-    ),
+    )
+  ),
   tar_target(
     name = tool_clusters,
     command= read_all_tabs(fp = cluster_tool_file,
                            clean_names = F,
                            skip=0,
                            sheet_names = c("survey","choices")
-                           )
     )
+  ),
+  # Detect Q Type #####
+  tar_target(
+    name = so_vars_iccg,
+    command= so_vars_by_sheet(df_list = iccg_clean)
+  ),
+  tar_target(
+    name = so_vars_clusters,
+    command= so_vars_by_sheet(df_list = clusters_clean)
+  )
 )
+
