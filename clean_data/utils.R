@@ -69,7 +69,7 @@ write_swaps_yearly_data <- function(wb, sheet, df) {
   names(df_wb) <- str_remove(df_names, "_[0-9]{4}$")
 
   # get dimensions of the data frame
-  years <- unlist(df_wb[1,], use.names = FALSE)
+  years <- unlist(df_wb[1, ], use.names = FALSE)
   cols <- which(years == 2022)
   rows <- 3:(nrow(df) + 1) # need to account for adding headers as rows
 
@@ -77,4 +77,3 @@ write_swaps_yearly_data <- function(wb, sheet, df) {
   writeData(wb, sheet, df_wb)
   format_2022_cols(wb, sheet, rows, cols)
 }
-
