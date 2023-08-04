@@ -12,7 +12,7 @@ source(
 df_iccg <- read_json(
   file.path(
     input_dir,
-    "CDM Survey HCT-ICCG Data extract 230601.json"
+    "HCT-ICCG data.json"
   ),
   simplifyVector = TRUE
 ) %>%

@@ -12,7 +12,7 @@ source(
 df_cluster <- read_json(
   file.path(
     input_dir,
-    "CDM Survey Cluster Data extract 230601.json"
+    "Cluster data.json"
   ),
   simplifyVector = TRUE
 ) %>%
