@@ -25,6 +25,9 @@ df_cluster <- read_json(
       "FSC-AG",
       CL_Sectors
     )
+  ) %>%
+  filter(
+    year > 2020
   )
 
 ######################
@@ -167,13 +170,6 @@ df_clsub <- df_cluster %>%
     .fn = \(x) str_remove(x, "^CL_Sub"),
     .cols = everything()
   ) %>%
-  select(
-    -starts_with("Leads"), # only used in 2020
-    -LeadsNum
-  ) %>%
-  filter(
-    year != "2020"
-  ) %>%
   mutate(
     across(
       .fns = as.character
@@ -207,6 +203,76 @@ writeData(
   wb_clusters,
   "CLSub",
   df_clsub
+)
+
+# now create a comparison sheet that draws comparisons between the first
+# set of columns with this data
+
+df_clsub_check <- df_clsub %>%
+  select(
+    IN_Operation,
+    Loc,
+    LocOther,
+    Area,
+    year,
+    Type,
+    Name,
+    Role,
+    year
+  )
+
+df_clsub_check_2022 <- filter(df_clsub_check, year == 2022)
+df_clsub_check_2021 <- filter(df_clsub_check, year == 2021)
+
+df_clsub_check_final <- df_clsub_check_2022 %>%
+  left_join(
+    df_clsub_check_2021 %>%
+      rename(
+        Role2021 = Role
+      ) %>%
+      select(
+        -year
+      ) %>%
+      mutate(
+        org_check = ""
+      ),
+    by = c("IN_Operation", "Loc", "LocOther", "Area", "Type", "Name"),
+    relationship = "many-to-many"
+  ) %>%
+  mutate(
+    new_role = ifelse(Role != Role2021, paste("New role in 2022, was", Role2021), NA),
+    org_check = ifelse(is.na(org_check), "New org in 2022", NA)
+  ) %>%
+  select(
+    -Role2021
+  ) %>%
+  bind_rows(
+    anti_join(
+      df_clsub_check_2021 %>% mutate(org_check = "Org removed in 2022"),
+      df_clsub_check_2022,
+      by = c("IN_Operation", "Loc", "LocOther", "Area", "Type", "Name")
+    )
+  )
+
+# save to a workbook
+
+addWorksheet(
+  wb_clusters,
+  "CLSub_check"
+)
+
+writeData(
+  wb_clusters,
+  "CLSub_check",
+  df_clsub_check_final
+)
+
+conditionalFormatting(
+  wb = wb_clusters,
+  sheet = "CLSub_check",
+  rows = 1:nrow(df_clsub_check_final) + 1,
+  cols = 9:10,
+  rule = 'I2<>""'
 )
 
 ########################################
@@ -278,12 +344,6 @@ df_cltech <- df_cluster %>%
   ) %>%
   rename(
     TechName = Name
-  ) %>%
-  select(
-    -starts_with("Chair"), # only used in 2020
-  ) %>%
-  filter(
-    year != "2020"
   ) %>%
   mutate(
     across(

@@ -20,6 +20,9 @@ df_iccg <- read_json(
   as_tibble() %>%
   mutate(
     year = 2019 + reportingWindowId,
+  ) %>%
+  filter(
+    year > 2020
   )
 
 ###################
