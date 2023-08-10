@@ -44,7 +44,8 @@ particular sheet that were not completed although a survey has been submited.
 These are excluded from the main sheet and only included in the incomplete sheet.
 
 - *None:* In a couple of instances, data changed too much between 2021 and 2022
-for comparisons
+for comparisons. If this is the case, a `_check` sheet was created with a subset
+of data that checks were done on.
 
 **swaps_iccg_data.xlsx**
 
@@ -64,7 +65,9 @@ for comparisons
 | Cluster| Full |
 | ClusterIncomplete | Incomplete |
 | CLSub_count | Full |
-| CLSub| None |
+| CLSub | None |
+| CLSub_check | None |
+
 | CLTech_count | Full |
 | CLTech | None |
 
