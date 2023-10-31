@@ -77,3 +77,8 @@ write_swaps_yearly_data <- function(wb, sheet, df) {
   writeData(wb, sheet, df_wb)
   format_2022_cols(wb, sheet, rows, cols)
 }
+
+write_swaps_data <- function(wb, sheet, df) {
+  addWorksheet(wb, sheet)
+  writeData(wb, sheet, df)
+}
