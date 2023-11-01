@@ -28,11 +28,11 @@ df_iccg <- GET(
   as_tibble() |>
   mutate(
     year = 2019 + reportingWindowId,
-    IN_Operation_short = !(IN_Operation %in% c("SLV", "GTM", "PAK", "SDN")) # other countries on short list
+    IN_Operation_short = !(IN_Operation %in% c("SLV", "GTM", "PAK")) # other countries on short list
   ) |>
   filter(
     year > 2021,
-    !(IN_Operation %in% c("SYR-NE", "SYR-RG", "PFC"))# removing 3 operations never included for analysis
+    !(IN_Operation %in% c("SYR-NE", "SYR-RG", "PFC", "SDN"))# removing 3 operations never included for analysis
   )
 
 ###################

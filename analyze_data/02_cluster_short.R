@@ -9,7 +9,7 @@ wb_cluster_analysis <- createWorkbook()
 
 #' Joins data frames together ignoring column names and rows
 join_list <- function(df_list) {
-  df_list <- map(df_list, \(x) mutate(x, joining_id = row_number()))
+  df_list <- map(df_list, \(x) ungroup(x) |> mutate(joining_id = row_number()))
   df <- reduce(
     df_list,
     \(x, y) {
@@ -856,7 +856,7 @@ cluster_responsibilities <- list(
       IN_Type != "WKG"
     ) |>
     summarize(
-      `% updated/developed ToR since 2020` = scales::percent(1 - sum(as.Date(CL_ToRYear) < "2020-01-01" | is.na(CL_ToRYear)) / n())
+      `% ToRs updated/developed 2020` = scales::percent(sum(as.Date(CL_ToRYear) >= "2020-01-01", na.rm = TRUE) / sum(!is.na(CL_ToRYear)))
     )
 )
 

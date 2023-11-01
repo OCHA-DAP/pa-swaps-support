@@ -19,6 +19,18 @@ join_list <- function(df_list) {
   select(df, -joining_id)
 }
 
+#################################
+#### FILTERING TO SHORT LIST ####
+#################################
+
+df_iccg_wide <- filter(df_iccg_wide, as.logical(IN_Operation_short))
+df_hct <- filter(df_hct, as.logical(IN_Operation_short))
+df_iccg <- filter(df_iccg, as.logical(IN_Operation_short))
+df_icc_subnat <- filter(df_icc_subnat, as.logical(IN_Operation_short))
+df_hct_subnat <- filter(df_hct_subnat, as.logical(IN_Operation_short))
+df_fmrrm <- filter(df_fmrrm, as.logical(IN_Operation_short))
+df_subgroups <- filter(df_subgroups, as.logical(IN_Operation_short))
+
 ###################################
 #### HUMANITARIAN COUNTRY TEAM ####
 ###################################
@@ -1021,7 +1033,7 @@ write_swaps_data(
 
 saveWorkbook(
   wb = wb_iccg_analysis,
-  file = file.path(output_dir, "swaps_iccg_analysis.xlsx"),
+  file = file.path(output_dir, "swaps_iccg_analysis_short.xlsx"),
   overwrite = TRUE
 )
 
