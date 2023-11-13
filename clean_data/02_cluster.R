@@ -53,6 +53,11 @@ df_cluster <- GET(
       is.na(CL_Sectors) & is.na(IN_Type) ~ TRUE,
       is.na(IN_TypeStrEn) ~ TRUE,
       .default = FALSE
+    ),
+    CL_Sectors = ifelse(
+      IN_Operation == "ETH" & CL_Sectors == "FSC-AG",
+      "FSC",
+      CL_Sectors
     )
   ) %>%
   filter(
@@ -111,6 +116,7 @@ df_cluster_leadership <- df_cluster_wide |>
     IN_Operation_short,
     IN_Type,
     CL_SectorsID,
+    CL_Sectors,
     CL_OrgsNum,
     matches("CL_Org[0-9]{1}(Role|Type)")
   ) |>
@@ -187,6 +193,7 @@ df_cluster_staffing_class <- df_cluster_staffing |>
     IN_Operation_short,
     IN_Type,
     CL_SectorsID,
+    CL_Sectors,
     Function,
     Role_analysis
   ) |>
@@ -248,6 +255,7 @@ df_clsub <- df_cluster %>%
   transmute(
     IN_Operation,
     IN_Operation_short,
+    CL_Sectors,
     submissionId,
     year,
     CLSub = map(
@@ -276,7 +284,7 @@ df_clsub <- df_cluster %>%
     )
   ) %>%
   pivot_longer(
-    -c(IN_Operation, IN_Operation_short, Calc, Loc, LocOther, Area, submissionId, year, OrgsNum, OrgsFootnote),
+    -c(IN_Operation, IN_Operation_short, CL_Sectors, Calc, Loc, LocOther, Area, submissionId, year, OrgsNum, OrgsFootnote),
     names_pattern = "Org([1-3]{1})(.*)",
     names_to = c("Num", "name")
   ) %>%
@@ -322,6 +330,7 @@ df_clsub_staffing <- df_clsub |>
     IN_Operation,
     IN_Operation_short,
     IN_Type,
+    CL_Sectors,
     submissionId,
     Calc,
     Num,
@@ -365,6 +374,7 @@ df_clsub_staffing_class <- df_clsub_staffing |>
     IN_Operation,
     IN_Operation_short,
     IN_Type,
+    CL_Sectors,
     submissionId,
     Calc,
     Function,
@@ -431,6 +441,7 @@ df_cltech <- df_cluster %>%
     IN_Operation_short,
     IN_Type,
     CL_SectorsID,
+    CL_Sectors,
     submissionId,
     year,
     CLTech = map(
@@ -462,7 +473,7 @@ df_cltech <- df_cluster %>%
     )
   ) %>%
   pivot_longer(
-    -c(IN_Operation, IN_Operation_short, IN_Type, CL_SectorsID, Calc, submissionId, year, OrgsNum, ToR, Desc, Ptcps, TechName),
+    -c(IN_Operation, IN_Operation_short, IN_Type, CL_SectorsID, CL_Sectors, Calc, submissionId, year, OrgsNum, ToR, Desc, Ptcps, TechName),
     names_pattern = "Org([1-3]{1})(.*)",
     names_to = c("Num", "name")
   ) %>%

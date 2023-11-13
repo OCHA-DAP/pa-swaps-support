@@ -21,6 +21,18 @@ join_list <- function(df_list) {
   df
 }
 
+#################################
+#### FILTERING TO SHORT LIST ####
+#################################
+
+df_cluster_wide <- filter(df_cluster_wide, IN_Operation_short)
+df_clsub <- filter(df_clsub, as.logical(IN_Operation_short))
+df_clsub_staffing <- filter(df_clsub_staffing, as.logical(IN_Operation_short))
+df_clsub_staffing_class <- filter(df_clsub_staffing_class, as.logical(IN_Operation_short))
+df_cluster_staffing <- filter(df_cluster_staffing, as.logical(IN_Operation_short))
+df_cluster_staffing_class <- filter(df_cluster_staffing_class, as.logical(IN_Operation_short))
+df_cluster_leadership <- filter(df_cluster_leadership, as.logical(IN_Operation_short))
+df_cltech <- filter(df_cltech, as.logical(IN_Operation_short))
 
 ###############################
 #### COORDINATION OVERVIEW ####
@@ -28,11 +40,8 @@ join_list <- function(df_list) {
 
 coord_overview <- list(
   df_cluster_wide |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     summarize(
-      `Clusters, sectors and AoRs at national level (not WKG)` = n(),
+      `Clusters, sectors and AoRs at national level` = n(),
       `Clusters` = sum(IN_Type == "CLU"),
       `Sectors` = sum(IN_Type == "SEC"),
       `Sectors/Clusters` = sum(IN_Type == "CLU SEC"),
@@ -51,9 +60,6 @@ coord_overview <- list(
       `# technical working groups` = n()
     ),
   df_cluster_wide |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     summarize(
       `#` = as.character(sum(CL_SAG == "Y")),
       `%` = scales::percent(sum(CL_SAG == "Y") / n())
@@ -63,9 +69,6 @@ coord_overview <- list(
       names_to = "Clusters/Sectors/AOR with SAG"
     ),
   df_cluster_wide |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     select(
       starts_with("CL_SAGMembers"),
       -CL_SAGMembersOTHSpecify,
@@ -94,26 +97,19 @@ coord_overview <- list(
     ),
   df_cluster_wide |>
     filter(
-      IN_Type != "WKG",
       CL_SAG == "Y"
     ) |>
     summarize(
       `Average member # of SAG` = mean(as.numeric(CL_SAGMembersTotalCalc))
     ),
   df_clsub |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     distinct(
       IN_Operation, submissionId, Calc
     ) |>
     summarize(
-      `Total #clusters, sectors, AoRs at subnational level (not WKG)` = n()
+      `Total #clusters, sectors, AoRs at subnational level` = n()
     ),
   df_clsub |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     distinct(
       IN_Operation,
       Loc
@@ -122,9 +118,6 @@ coord_overview <- list(
       `# of subnational locations` = n()
     ),
   df_clsub |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     mutate(
       Area = strsplit(Area, " ")
     ) |>
@@ -140,9 +133,6 @@ coord_overview <- list(
       `# of subnational locations and areas` = n()
     ),
   df_clsub |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     distinct(
       IN_Operation,
       submissionId,
@@ -160,9 +150,6 @@ coord_overview <- list(
       )
     ),
   df_cluster_wide |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     left_join(
       distinct(
         df_clsub,
@@ -194,7 +181,6 @@ write_swaps_data(
 cluster_leadership_national <- list(
   df_cluster_leadership |>
     filter(
-      IN_Type != "WKG",
       Role %in% c("LEAD", "COLEAD")
     ) |>
     group_by(
@@ -214,7 +200,6 @@ cluster_leadership_national <- list(
     ),
   df_cluster_leadership |>
     filter(
-      IN_Type != "WKG",
       Role %in% c("LEAD", "COLEAD", "COCHAIR", "COFAC", "COCOORD")
     ) |>
     group_by(
@@ -234,7 +219,6 @@ cluster_leadership_national <- list(
     ),
   df_cluster_leadership |>
     filter(
-      IN_Type != "WKG",
       Role %in% c("COCHAIR", "COFAC", "COCOORD")
     ) |>
     group_by(
@@ -253,9 +237,6 @@ cluster_leadership_national <- list(
       )
     ),
   df_cluster_leadership |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     group_by(
       IN_Operation,
       CL_Sectors
@@ -268,9 +249,6 @@ cluster_leadership_national <- list(
       `% clusters/sectors/AoRs at national level having cochair` = scales::percent(mean(cochair))
     ),
   df_cluster_leadership |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     mutate(
       Sector = strsplit(CL_Sectors, " ")
     ) |>
@@ -290,16 +268,12 @@ cluster_leadership_national <- list(
     ),
   df_cluster_leadership |>
     filter(
-      IN_Type != "WKG",
       Role %in% c("COCHAIR", "COFAC", "COCOORD")
     ) |>
     summarize(
       `% of NGO co-chairs` = scales::percent(mean(Type %in% c("INGO", "NNGO")))
     ),
   df_cluster_leadership |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     group_by(
       IN_Operation,
       CL_Sectors
@@ -323,16 +297,10 @@ cluster_leadership_national <- list(
       values_to = "% of clusters"
     ),
   df_cluster_leadership |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     summarize(
       `% of leadership roles held by NNGO/Govt/RC-N (global)` = scales::percent(mean(Type %in% c("NNGO", "NTA", "RCN", "LCA")))
     ),
   df_cluster_leadership |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     mutate(
       Sector = strsplit(CL_Sectors, " ")
     ) |>
@@ -367,9 +335,6 @@ write_swaps_data(
 
 cluster_leadership_subnational <- list(
   df_clsub |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     count(
       Type
     ) |>
@@ -384,7 +349,6 @@ cluster_leadership_subnational <- list(
     ),
   df_clsub |>
     filter(
-      IN_Type != "WKG",
       Role %in% c("LEAD", "COLEAD")
     ) |>
     count(
@@ -401,7 +365,6 @@ cluster_leadership_subnational <- list(
     ),
   df_clsub |>
     filter(
-      IN_Type != "WKG",
       Role %in% c("COCHAIR", "COFAC", "COCOORD")
     ) |>
     count(
@@ -417,9 +380,6 @@ cluster_leadership_subnational <- list(
       -n
     ),
   df_clsub |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     group_by(
       submissionId,
       Calc
@@ -432,9 +392,6 @@ cluster_leadership_subnational <- list(
       `% cluster/sector/AoR at subnational with co-chairs` = scales::percent(mean(cochair))
     ),
   df_clsub |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     group_by(
       submissionId,
       Calc
@@ -461,7 +418,6 @@ write_swaps_data(
 cluster_staffing_nat <- list(
   df_cluster_staffing_class |>
     filter(
-      IN_Type != "WKG",
       Role_analysis == "Co-lead/lead",
       Function == "CD"
     ) |>
@@ -474,7 +430,6 @@ cluster_staffing_nat <- list(
     ),
   df_cluster_staffing_class |>
     filter(
-      IN_Type != "WKG",
       Function == "CD"
     ) |>
     group_by(
@@ -527,7 +482,6 @@ cluster_staffing_nat <- list(
     ),
   df_cluster_staffing_class |>
     filter(
-      IN_Type != "WKG",
       Function == "CD"
     ) |>
     count(
@@ -539,7 +493,6 @@ cluster_staffing_nat <- list(
     ),
   df_cluster_staffing_class |>
     filter(
-      IN_Type != "WKG",
       Role_analysis == "Co-lead/lead",
       Function == "IM"
     ) |>
@@ -552,7 +505,6 @@ cluster_staffing_nat <- list(
     ),
   df_cluster_staffing_class |>
     filter(
-      IN_Type != "WKG",
       Function == "IM"
     ) |>
     group_by(
@@ -576,7 +528,6 @@ cluster_staffing_nat <- list(
     ),
   df_cluster_staffing_class |>
     filter(
-      IN_Type != "WKG",
       Function == "IM"
     ) |>
     count(
@@ -602,7 +553,6 @@ write_swaps_data(
 cluster_staffing_subnat <- list(
   df_clsub_staffing_class |>
     filter(
-      IN_Type != "WKG",
       Role_analysis == "Co-lead/lead",
       Function == "CD"
     ) |>
@@ -615,7 +565,6 @@ cluster_staffing_subnat <- list(
     ),
   df_clsub_staffing_class |>
     filter(
-      IN_Type != "WKG",
       Function == "CD"
     ) |>
     group_by(
@@ -676,7 +625,6 @@ cluster_staffing_subnat <- list(
     ),
   df_clsub_staffing_class |>
     filter(
-      IN_Type != "WKG",
       Role_analysis == "Co-lead/lead",
       Function == "IM"
     ) |>
@@ -689,7 +637,6 @@ cluster_staffing_subnat <- list(
     ),
   df_clsub_staffing_class |>
     filter(
-      IN_Type != "WKG",
       Function == "IM"
     ) |>
     group_by(
@@ -729,9 +676,6 @@ write_swaps_data(
 
 cluster_membership <- list(
   df_cluster_wide |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     summarize(
       `Active members` = sum(as.numeric(CL_MembersActiveTotalCalc)),
       `Members` = sum(as.numeric(CL_MembersTotalCalc))
@@ -742,9 +686,6 @@ cluster_membership <- list(
       values_to = "#"
     ),
   df_cluster_wide |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     select(
       starts_with("CL_Members"),
       -matches("Active|Total|Calc|Specify")
@@ -772,9 +713,6 @@ cluster_membership <- list(
       `%` = scales::percent(`#` / sum(`#`))
     ),
   df_cluster_wide |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     group_by(
       IN_Operation
     ) |>
@@ -801,16 +739,10 @@ write_swaps_data(
 
 technical_working_group <- list(
   df_cltech |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     summarize(
       `Total # TWG` = sum(length(unique(TechName)))
     ),
   df_cltech |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     group_by(
       `Breakdown of chairs/FP` = Type
     ) |>
@@ -826,9 +758,6 @@ technical_working_group <- list(
       `%` = scales::percent(`#` / sum(`#`))
     ),
   df_cltech |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     mutate(
       Sector = strsplit(CL_Sectors, " ")
     ) |>
@@ -847,9 +776,6 @@ technical_working_group <- list(
       )
     ),
   df_cltech |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     group_by(
       submissionId,
       TechName
@@ -876,37 +802,22 @@ write_swaps_data(
 
 cluster_responsibilities <- list(
   df_cluster_wide |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     summarize(
       `% with Cluster Strategy` = scales::percent(sum(CL_Strat == "Y") / n())
     ),
   df_cluster_wide |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     summarize(
       `% fully completed CCPM` = scales::percent(sum(CL_CCPM == "FULL") / n())
     ),
   df_cluster_wide |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     summarize(
       `% with Transition Plans` = scales::percent(sum(CL_Trans == "Y") / n())
     ),
   df_cluster_wide |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     summarize(
       `% with ToRs` = scales::percent(sum(CL_ToR == "Y") / n())
     ),
   df_cluster_wide |>
-    filter(
-      IN_Type != "WKG"
-    ) |>
     summarize(
       `% ToRs updated/developed 2020` = scales::percent(sum(as.Date(CL_ToRYear) >= "2020-01-01", na.rm = TRUE) / sum(!is.na(CL_ToRYear)))
     )
@@ -925,9 +836,6 @@ write_swaps_data(
 
 language <- list(
   df_cluster_wide |>
-    filter(
-      IN_Type != "WKG"
-    )|>
     summarize(
       `National level` = scales::percent(sum(CL_LangOfficialNat != "NONE", na.rm = TRUE) / sum(!is.na(CL_LangOfficialNat))),
       `Subnational level` = scales::percent(sum(CL_LangOfficialSubnat != "NONE", na.rm = TRUE) / sum(!is.na(CL_LangOfficialSubnat)))
@@ -938,9 +846,6 @@ language <- list(
       values_to = "%"
     ),
   df_cluster_wide |>
-    filter(
-      IN_Type != "WKG",
-    ) |>
     summarize(
       `National level` = scales::percent(sum(CL_LangTransNat %in% c("3", "4"), na.rm = TRUE) / sum(!is.na(CL_LangTransNat))),
       `Subnational level` = scales::percent(sum(CL_LangTransSubnat %in% c("3", "4"), na.rm = TRUE) / sum(!is.na(CL_LangTransSubnat)))
@@ -951,9 +856,6 @@ language <- list(
       values_to = "%"
     ),
   df_cluster_wide |>
-    filter(
-      IN_Type != "WKG",
-    ) |>
     summarize(
       `National level` = scales::percent(sum(CL_LangTransNat %in% c("4"), na.rm = TRUE) / sum(!is.na(CL_LangTransNat))),
       `Subnational level` = scales::percent(sum(CL_LangTransSubnat %in% c("4"), na.rm = TRUE) / sum(!is.na(CL_LangTransSubnat)))
@@ -964,9 +866,6 @@ language <- list(
       values_to = "%"
     ),
   df_cluster_wide |>
-    filter(
-      IN_Type != "WKG",
-    ) |>
     summarize(
       `National level` = scales::percent(sum(CL_LangTransNat != "0", na.rm = TRUE) / sum(!is.na(CL_LangTransNat))),
       `Subnational level` = scales::percent(sum(CL_LangTransSubnat != "0", na.rm = TRUE) / sum(!is.na(CL_LangTransSubnat)))
@@ -977,15 +876,11 @@ language <- list(
       values_to = "%"
     ),
   df_cluster_wide |>
-    filter(
-      IN_Type != "WKG"
-    )|>
     summarize(
       `% SAG AoRs at national using official/local language` = scales::percent(sum(CL_LangOfficialSAG != "NONE", na.rm = TRUE) / sum(!is.na(CL_LangOfficialSAG)))
     ),
   df_cluster_wide |>
     filter(
-      IN_Type != "WKG",
       !is.na(CL_LangOfficialNat)
     ) |>
     transmute(
@@ -1025,7 +920,6 @@ language <- list(
     ),
   df_cluster_wide |>
     filter(
-      IN_Type != "WKG",
       !is.na(CL_LangOfficialSubnat)
     ) |>
     transmute(
@@ -1077,6 +971,6 @@ write_swaps_data(
 
 saveWorkbook(
   wb = wb_cluster_analysis,
-  file = file.path(output_dir, "swaps_clusters_analysis.xlsx"),
+  file = file.path(output_dir, "swaps_clusters_analysis_short_with_wkg.xlsx"),
   overwrite = TRUE
 )

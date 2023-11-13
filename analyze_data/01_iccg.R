@@ -13,10 +13,12 @@ join_list <- function(df_list) {
   df <- reduce(
     df_list,
     \(x, y) {
-      full_join(x, y, by = "joining_id", suffix = c("", ""))
+      full_join(x, y, by = "joining_id", suffix = c("@", "£"))
     }
   )
-  select(df, -joining_id)
+  df <- select(df, -joining_id)
+  names(df) <- str_remove_all(names(df), "@|£")
+  df
 }
 
 ###################################

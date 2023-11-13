@@ -13,10 +13,12 @@ join_list <- function(df_list) {
   df <- reduce(
     df_list,
     \(x, y) {
-      full_join(x, y, by = "joining_id", suffix = c("", ""))
+      full_join(x, y, by = "joining_id", suffix = c("@", "£"))
     }
   )
-  select(df, -joining_id)
+  df <- select(df, -joining_id)
+  names(df) <- str_remove_all(names(df), "@|£")
+  df
 }
 
 #################################
@@ -268,7 +270,7 @@ cluster_leadership_national <- list(
     ) |>
     group_by(
       IN_Operation,
-      CL_SectorsID
+      CL_Sectors
     ) |>
     summarize(
       cochair = any(Role %in% c("COCHAIR", "COFAC", "COCOORD")),
@@ -282,7 +284,7 @@ cluster_leadership_national <- list(
       IN_Type != "WKG"
     ) |>
     mutate(
-      Sector = strsplit(CL_SectorsID, " ")
+      Sector = strsplit(CL_Sectors, " ")
     ) |>
     unnest(
       Sector
@@ -312,7 +314,7 @@ cluster_leadership_national <- list(
     ) |>
     group_by(
       IN_Operation,
-      CL_SectorsID
+      CL_Sectors
     ) |>
     summarize(
       local = any(Type %in% c("NNGO", "NTA", "RCN", "LCA")),
@@ -344,7 +346,7 @@ cluster_leadership_national <- list(
       IN_Type != "WKG"
     ) |>
     mutate(
-      Sector = strsplit(CL_SectorsID, " ")
+      Sector = strsplit(CL_Sectors, " ")
     ) |>
     unnest(
       Sector
@@ -489,7 +491,36 @@ cluster_staffing_nat <- list(
     ) |>
     group_by(
       Country = IN_Operation,
-      CL_SectorsID
+      CL_Sectors
+    ) |>
+    summarize(
+      dedicated_coordinator = any(Role_analysis == "Co-lead/lead" & Staffing == "Dedicated"),
+      .groups = "drop_last"
+    ) |>
+    summarize(
+      `% of clusters with dedicated lead/co-lead nationally` = mean(dedicated_coordinator)
+    ) |>
+    arrange(
+      desc(
+        `% of clusters with dedicated lead/co-lead nationally`
+      )
+    ) |>
+    mutate(
+      `% of clusters with dedicated lead/co-lead nationally` = scales::percent(`% of clusters with dedicated lead/co-lead nationally`)
+    ),
+  df_cluster_staffing_class |>
+    mutate(
+      Sectors = strsplit(CL_Sectors, " ")
+    ) |>
+    unnest(
+      Sectors
+    ) |>
+    filter(
+      Function == "CD"
+    ) |>
+    group_by(
+      Sectors,
+      IN_Operation
     ) |>
     summarize(
       dedicated_coordinator = any(Role_analysis == "Co-lead/lead" & Staffing == "Dedicated"),
@@ -538,7 +569,7 @@ cluster_staffing_nat <- list(
     ) |>
     group_by(
       Country = IN_Operation,
-      CL_SectorsID
+      CL_Sectors
     ) |>
     summarize(
       dedicated_imo = any(Role_analysis == "Co-lead/lead" & Staffing == "Dedicated"),
@@ -610,6 +641,39 @@ cluster_staffing_subnat <- list(
     ) |>
     group_by(
       Country
+    ) |>
+    summarize(
+      `% of clusters with dedicated lead/co-lead subnationally` = mean(dedicated_coordinator)
+    ) |>
+    arrange(
+      desc(
+        `% of clusters with dedicated lead/co-lead subnationally`
+      )
+    ) |>
+    mutate(
+      `% of clusters with dedicated lead/co-lead subnationally` = scales::percent(`% of clusters with dedicated lead/co-lead subnationally`)
+    ),
+  df_clsub_staffing_class |>
+    mutate(
+      Sectors = strsplit(CL_Sectors, " "),
+    ) |>
+    unnest(
+      Sectors
+    ) |>
+    filter(
+      Function == "CD"
+    ) |>
+    group_by(
+      Sectors,
+      submissionId,
+      Calc
+    ) |>
+    summarize(
+      dedicated_coordinator = any(Role_analysis == "Co-lead/lead" & Staffing == "Dedicated"),
+      .groups = "drop"
+    ) |>
+    group_by(
+      Sectors
     ) |>
     summarize(
       `% of clusters with dedicated lead/co-lead subnationally` = mean(dedicated_coordinator)
@@ -778,7 +842,7 @@ technical_working_group <- list(
       IN_Type != "WKG"
     ) |>
     mutate(
-      Sector = strsplit(CL_SectorsID, " ")
+      Sector = strsplit(CL_Sectors, " ")
     ) |>
     unnest(
       Sector
