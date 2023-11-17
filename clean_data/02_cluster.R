@@ -37,17 +37,16 @@ df_cluster <- GET(
       IN_Operation == "BDI" & CL_Sectors == "PRO-GBV" ~ TRUE,
       IN_Operation == "CMR" & CL_Sectors == "ERY" ~ TRUE,
       IN_Operation == "ETH" & CL_Sectors == "PRO-CPN PRO-GBV" ~ TRUE,
-      IN_Operation == "ETH" & CL_Sectors == "PRO PRO-GBV" ~ TRUE,
-      IN_Operation == "ETH" & CL_Sectors == "PRO-CPN" ~ TRUE,
       IN_Operation == "ETH" & CL_Sectors == "TEL" ~ TRUE,
       IN_Operation == "ETH" & CL_Sectors == "PRO-HLP" ~ TRUE,
       IN_Operation == "HTI" & CL_Sectors == "TEL" ~ TRUE,
       IN_Operation == "HTI" & CL_Sectors == "SHL" ~ TRUE,
       IN_Operation == "LBY" & CL_Sectors == "LOG" ~ TRUE,
       IN_Operation == "LBY" & CL_Sectors == "HEA" ~ TRUE,
+      IN_Operation == "LBY" & CL_Sectors == "EDU PRO-CPN WSH" ~ TRUE, # Randa didn't use this one
       IN_Operation == "LBY" & CL_Sectors == "SHL" ~ TRUE,
       IN_Operation == "PSE" & CL_Sectors == "LOG" ~ TRUE,
-      IN_Operation == "UKR" & CL_Sectors == "HEA NUT" ~ TRUE,
+      IN_Operation == "SYR-GZ" & CL_Sectors == "LOG" ~ TRUE, # Randa didn't use this one
       IN_Operation == "UKR" & CL_Sectors == "HEA" ~ TRUE,
       IN_Operation == "ZWE" & CL_Sectors == "HEA" ~ TRUE,
       is.na(CL_Sectors) & is.na(IN_Type) ~ TRUE,
@@ -215,6 +214,53 @@ write_swaps_data(
   df = df_cluster_staffing_class
 )
 
+##########################################################
+#### CLUSTER STAFFING NATIONAL CLASSIFICATION: NO GOV ####
+##########################################################
+
+df_cluster_staffing_class_nogov <- df_cluster_staffing |>
+  filter(
+    !is.na(Full),
+    !(Type %in% c("NTA", "LCA"))
+  ) |>
+  mutate(
+    across(
+      .cols = c(Full, Dbl, Vac, NoP),
+      .fns = as.numeric
+    ),
+    Role_analysis = ifelse(
+      Role %in% c("LEAD", "COLEAD"),
+      "Co-lead/lead",
+      "Co-chair"
+    )
+  ) |>
+  group_by(
+    IN_Operation,
+    IN_Operation_short,
+    IN_Type,
+    CL_SectorsID,
+    CL_Sectors,
+    Function,
+    Role_analysis
+  ) |>
+  summarize(
+    Staffing = case_when(
+      any(Full >= 9) ~ "Dedicated",
+      sum(Full >= 6) >= 2 ~ "Dedicated",
+      any(Full >= 3) ~ "Partial",
+      any(Dbl >= 9) ~ "Double",
+      sum(Dbl >= 6) >= 2 ~ "Double",
+      any(NoP + Vac >= 3) ~ "Vacant"
+    ),
+    .groups = "drop"
+  )
+
+write_swaps_data(
+  wb = wb_clusters,
+  sheet = "CL_Staffing_Class_NoGov",
+  df = df_cluster_staffing_class_nogov
+)
+
 #######################################
 #### CLUSTER SUBGROUP: CLSub_count ####
 #######################################
@@ -335,6 +381,7 @@ df_clsub_staffing <- df_clsub |>
     Calc,
     Num,
     Role,
+    Type,
     starts_with("Staff")
   ) |>
   pivot_longer(
@@ -396,6 +443,53 @@ write_swaps_data(
   wb = wb_clusters,
   sheet = "CLSub_Staffing_Class",
   df = df_clsub_staffing_class
+)
+
+##################################################
+#### CLUSTER SUBGROUP STAFFING: NO GOVERNMENT ####
+##################################################
+
+df_clsub_staffing_class_nogov <- df_clsub_staffing |>
+  filter(
+    !(Type %in% c("NTA", "LCA"))
+  ) |>
+  mutate(
+    across(
+      .cols = c(Full, Dbl, Vac, NoP),
+      .fns = as.numeric
+    ),
+    Role_analysis = ifelse(
+      Role %in% c("LEAD", "COLEAD"),
+      "Co-lead/lead",
+      "Co-chair"
+    )
+  ) |>
+  group_by(
+    IN_Operation,
+    IN_Operation_short,
+    IN_Type,
+    CL_Sectors,
+    submissionId,
+    Calc,
+    Function,
+    Role_analysis
+  ) |>
+  summarize(
+    Staffing = case_when(
+      any(Full >= 9) ~ "Dedicated",
+      sum(Full >= 6) >= 2 ~ "Dedicated",
+      any(Full >= 3) ~ "Partial",
+      any(Dbl >= 9) ~ "Double",
+      sum(Dbl >= 6) >= 2 ~ "Double",
+      any(NoP + Vac >= 3) ~ "Vacant"
+    ),
+    .groups = "drop"
+  )
+
+write_swaps_data(
+  wb = wb_clusters,
+  sheet = "CLSub_Staffing_Class_NoGov",
+  df = df_clsub_staffing_class_nogov
 )
 
 ########################################

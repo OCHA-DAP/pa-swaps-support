@@ -60,7 +60,7 @@ coord_overview <- list(
       IN_Type != "WKG"
     ) |>
     distinct(
-      IN_Operation, year, TechName
+      IN_Operation, submissionId, year, TechName
     ) |>
     summarize(
       `# technical working groups` = n()
@@ -406,6 +406,216 @@ write_swaps_data(
   join_list(cluster_leadership_national)
 )
 
+####################################################
+#### CLUSTER LEADERSHIP NATIONAL: NO GOVERNMENT ####
+####################################################
+
+df_cluster_leadership_nogov <- df_cluster_leadership |>
+  filter(
+    !(Type %in% c("LCA", "NTA"))
+  )
+
+cluster_leadership_national_nogov <- list(
+  df_cluster_leadership_nogov |>
+    filter(
+      IN_Type != "WKG",
+      Role %in% c("LEAD", "COLEAD")
+    ) |>
+    group_by(
+      `National lead/co-lead organizations` = Type
+    ) |>
+    summarize(
+      `#` = n(),
+      .groups = "drop"
+    ) |>
+    mutate(
+      `%` = scales::percent(`#` / sum(`#`))
+    ) |>
+    arrange(
+      desc(
+        `#`
+      )
+    ),
+  df_cluster_leadership_nogov |>
+    filter(
+      IN_Type != "WKG",
+      Role %in% c("LEAD", "COLEAD", "COCHAIR", "COFAC", "COCOORD")
+    ) |>
+    group_by(
+      `National lead/co-lead/cochair organizations` = Type
+    ) |>
+    summarize(
+      `#` = n(),
+      .groups = "drop"
+    ) |>
+    mutate(
+      `%` = scales::percent(`#` / sum(`#`))
+    ) |>
+    arrange(
+      desc(
+        `#`
+      )
+    ),
+  df_cluster_leadership_nogov |>
+    filter(
+      IN_Type != "WKG",
+      Role %in% c("COCHAIR", "COFAC", "COCOORD")
+    ) |>
+    group_by(
+      `National cochair organizations` = Type
+    ) |>
+    summarize(
+      `#` = n(),
+      .groups = "drop"
+    ) |>
+    mutate(
+      `%` = scales::percent(`#` / sum(`#`))
+    ) |>
+    arrange(
+      desc(
+        `#`
+      )
+    ),
+  df_cluster_leadership_nogov |>
+    filter(
+      IN_Type != "WKG"
+    ) |>
+    group_by(
+      IN_Operation,
+      CL_Sectors
+    ) |>
+    summarize(
+      cochair = any(Role %in% c("COCHAIR", "COFAC", "COCOORD")),
+      .groups = "drop"
+    ) |>
+    summarize(
+      `% clusters/sectors/AoRs at national level having cochair` = scales::percent(mean(cochair))
+    ),
+  df_cluster_leadership_nogov |>
+    filter(
+      IN_Type != "WKG"
+    ) |>
+    mutate(
+      Sector = strsplit(CL_Sectors, " ")
+    ) |>
+    unnest(
+      Sector
+    ) |>
+    group_by(
+      Sector
+    ) |>
+    summarize(
+      `# of co-chairs at national level` = sum(Role %in% c("COCHAIR", "COFAC", "COCOORD"))
+    ) |>
+    arrange(
+      desc(
+        `# of co-chairs at national level`
+      )
+    ),
+  df_cluster_leadership_nogov |>
+    filter(
+      IN_Type != "WKG",
+      Role %in% c("COCHAIR", "COFAC", "COCOORD")
+    ) |>
+    summarize(
+      `% of NGO co-chairs` = scales::percent(mean(Type %in% c("INGO", "NNGO")))
+    ),
+  df_cluster_leadership_nogov |>
+    filter(
+      IN_Type != "WKG"
+    ) |>
+    group_by(
+      IN_Operation,
+      CL_Sectors
+    ) |>
+    summarize(
+      local = any(Type %in% c("NNGO", "NTA", "RCN", "LCA")),
+      nngo = any(Type == "NNGO"),
+      nta = any(Type %in% c("NTA", "LCA")),
+      rcn = any(Type == "RCN"),
+      .groups = "drop"
+    ) |>
+    summarize(
+      `NNGO` = scales::percent(mean(nngo)),
+      `Nat Auth` = scales::percent(mean(nta)),
+      `RC-N` = scales::percent(mean(rcn)),
+      `NNGO/Nat Auth/RC-N` = scales::percent(mean(local))
+    ) |>
+    pivot_longer(
+      cols = everything(),
+      names_to = "National cluster lead/co-lead/chair",
+      values_to = "% of clusters"
+    ),
+  df_cluster_leadership_nogov |>
+    filter(
+      IN_Type != "WKG"
+    ) |>
+    summarize(
+      `# of leadership roles held by NNGO/Govt/RC-N (global)` = sum(Type %in% c("NNGO", "NTA", "RCN", "LCA")),
+      `% of leadership roles held by NNGO/Govt/RC-N (global)` = scales::percent(mean(Type %in% c("NNGO", "NTA", "RCN", "LCA")))
+    ),
+  df_cluster_leadership_nogov |>
+    filter(
+      IN_Type != "WKG"
+    ) |>
+    mutate(
+      Sector = strsplit(CL_Sectors, " ")
+    ) |>
+    unnest(
+      Sector
+    ) |>
+    group_by(
+      Sector
+    ) |>
+    summarize(
+      `# of leadership roles held by NNGO/Govt/RC-N` = sum(Type %in% c("NNGO", "NTA", "RCN", "LCA")),
+      `% of leadership roles held by NNGO/Govt/RC-N` = mean(Type %in% c("NNGO", "NTA", "RCN", "LCA"))
+    ) |>
+    arrange(
+      desc(
+        `% of leadership roles held by NNGO/Govt/RC-N`
+      )
+    ) |>
+    mutate(
+      `% of leadership roles held by NNGO/Govt/RC-N` = scales::percent(`% of leadership roles held by NNGO/Govt/RC-N`)
+    ),
+  df_cluster_leadership_nogov |>
+    filter(
+      IN_Type != "WKG"
+    ) |>
+    group_by(
+      IN_Operation,
+      CL_SectorsID
+    ) |>
+    summarize(
+      local = any(Type %in% c("NNGO", "NTA", "RCN", "LCA")),
+      .groups = "drop"
+    ) |>
+    group_by(
+      IN_Operation
+    ) |>
+    summarize(
+      `# national clusters with NNGO/Nat Auth/RCN as lead/colead/cochair` = sum(local),
+      local_pct = mean(local),
+      `% national clusters with NNGO/Nat Auth/RCN as lead/colead/cochair` = scales::percent(local_pct)
+    ) |>
+    arrange(
+      desc(
+        local_pct
+      )
+    ) |>
+    select(
+      -local_pct
+    )
+)
+
+write_swaps_data(
+  wb_cluster_analysis,
+  "Cluster leadership (N, no gov)",
+  join_list(cluster_leadership_national_nogov)
+)
+
+
 ########################################
 #### CLUSTER LEADERSHIP SUBNATIONAL ####
 ########################################
@@ -526,6 +736,133 @@ write_swaps_data(
   wb_cluster_analysis,
   "Cluster leadership (subnat)",
   join_list(cluster_leadership_subnational)
+)
+
+#######################################################
+#### CLUSTER LEADERSHIP SUBNATIONAL: NO GOVERNMENT ####
+#######################################################
+
+df_clsub_nogov <- df_clsub |>
+  filter(
+    !(Type %in% c("NTA", "LCA"))
+  )
+
+cluster_leadership_subnational_nogov <- list(
+  df_clsub_nogov |>
+    filter(
+      IN_Type != "WKG"
+    ) |>
+    count(
+      Type
+    ) |>
+    arrange(
+      desc(n)
+    ) |>
+    mutate(
+      `Leadership (lead/co-lead/co-chair) at subnational level` = scales::percent(n / sum(n))
+    ) |>
+    select(
+      -n
+    ),
+  df_clsub_nogov |>
+    filter(
+      IN_Type != "WKG",
+      Role %in% c("LEAD", "COLEAD")
+    ) |>
+    count(
+      Type
+    ) |>
+    arrange(
+      desc(n)
+    ) |>
+    mutate(
+      `Lead/co-lead only at subnational level` = scales::percent(n / sum(n))
+    ) |>
+    select(
+      -n
+    ),
+  df_clsub_nogov |>
+    filter(
+      IN_Type != "WKG",
+      Role %in% c("COCHAIR", "COFAC", "COCOORD")
+    ) |>
+    count(
+      Type
+    ) |>
+    arrange(
+      desc(n)
+    ) |>
+    mutate(
+      `Co-chair only at subnational level` = scales::percent(n / sum(n))
+    ) |>
+    select(
+      -n
+    ),
+  df_clsub_nogov |>
+    filter(
+      IN_Type != "WKG"
+    ) |>
+    group_by(
+      submissionId,
+      Calc
+    ) |>
+    summarize(
+      cochair = any(Role %in% c("COCHAIR", "COFAC", "COCOORD")),
+      .groups = "drop"
+    ) |>
+    summarize(
+      `% cluster/sector/AoR at subnational with co-chairs` = scales::percent(mean(cochair))
+    ),
+  df_clsub_nogov |>
+    filter(
+      IN_Type != "WKG"
+    ) |>
+    group_by(
+      submissionId,
+      Calc
+    ) |>
+    summarize(
+      local = any(Type %in% c("NNGO", "NTA", "RCN", "LCA")),
+      .groups = "drop"
+    ) |>
+    summarize(
+      `% subnational clusters with NNGO/Nat Auth/RCN as lead/colead/cochair` = scales::percent(mean(local))
+    ),
+  df_clsub_nogov |>
+    filter(
+      IN_Type != "WKG"
+    ) |>
+    group_by(
+      IN_Operation,
+      submissionId,
+      Calc
+    ) |>
+    summarize(
+      local = any(Type %in% c("NNGO", "NTA", "RCN", "LCA")),
+      .groups = "drop"
+    ) |>
+    group_by(
+      IN_Operation
+    ) |>
+    summarize(
+      `# subnational clusters with NNGO/Nat Auth/RCN as lead/colead/cochair` = sum(local),
+      local_pct = mean(local),
+      `% subnational clusters with NNGO/Nat Auth/RCN as lead/colead/cochair` = scales::percent(local_pct)
+    ) |>
+    arrange(
+      desc(
+        local_pct
+      )
+    ) |>
+    select(
+      -local_pct
+    )
+)
+
+write_swaps_data(
+  wb_cluster_analysis,
+  "Cluster leadership (SN, no gov)",
+  join_list(cluster_leadership_subnational_nogov)
 )
 
 ###################################
@@ -671,6 +1008,148 @@ write_swaps_data(
   join_list(cluster_staffing_nat)
 )
 
+##################################################
+#### CLUSTER STAFFING NATIONAL: NO GOVERNMENT ####
+##################################################
+
+cluster_staffing_nat_nogov <- list(
+  df_cluster_staffing_class_nogov |>
+    filter(
+      IN_Type != "WKG",
+      Role_analysis == "Co-lead/lead",
+      Function == "CD"
+    ) |>
+    count(
+      `Coordinator coverage` = Staffing,
+      name = "#"
+    ) |>
+    mutate(
+      `%` = scales::percent(`#` / sum(`#`))
+    ),
+  df_cluster_staffing_class_nogov |>
+    filter(
+      IN_Type != "WKG",
+      Function == "CD"
+    ) |>
+    group_by(
+      Country = IN_Operation,
+      CL_Sectors
+    ) |>
+    summarize(
+      dedicated_coordinator = any(Role_analysis == "Co-lead/lead" & Staffing == "Dedicated"),
+      .groups = "drop_last"
+    ) |>
+    summarize(
+      `# of clusters with dedicated lead/co-lead nationally` = sum(dedicated_coordinator),
+      `% of clusters with dedicated lead/co-lead nationally` = mean(dedicated_coordinator)
+    ) |>
+    arrange(
+      desc(
+        `% of clusters with dedicated lead/co-lead nationally`
+      )
+    ) |>
+    mutate(
+      `% of clusters with dedicated lead/co-lead nationally` = scales::percent(`% of clusters with dedicated lead/co-lead nationally`)
+    ),
+  df_cluster_staffing_class_nogov |>
+    mutate(
+      Sectors = strsplit(CL_Sectors, " ")
+    ) |>
+    unnest(
+      Sectors
+    ) |>
+    filter(
+      IN_Type != "WKG",
+      Function == "CD"
+    ) |>
+    group_by(
+      Sectors,
+      IN_Operation
+    ) |>
+    summarize(
+      dedicated_coordinator = any(Role_analysis == "Co-lead/lead" & Staffing == "Dedicated"),
+      .groups = "drop_last"
+    ) |>
+    summarize(
+      `# of clusters with dedicated lead/co-lead nationally` = sum(dedicated_coordinator),
+      `% of clusters with dedicated lead/co-lead nationally` = mean(dedicated_coordinator)
+    ) |>
+    arrange(
+      desc(
+        `% of clusters with dedicated lead/co-lead nationally`
+      )
+    ) |>
+    mutate(
+      `% of clusters with dedicated lead/co-lead nationally` = scales::percent(`% of clusters with dedicated lead/co-lead nationally`)
+    ),
+  df_cluster_staffing_class_nogov |>
+    filter(
+      IN_Type != "WKG",
+      Function == "CD"
+    ) |>
+    count(
+      `Coordinator staffing all leads` = Staffing,
+      name = "#"
+    ) |>
+    mutate(
+      `%` = scales::percent(`#` / sum(`#`))
+    ),
+  df_cluster_staffing_class_nogov |>
+    filter(
+      IN_Type != "WKG",
+      Role_analysis == "Co-lead/lead",
+      Function == "IM"
+    ) |>
+    count(
+      `IMO staffing (lead/co-lead)` = Staffing,
+      name = "#"
+    ) |>
+    mutate(
+      `%` = scales::percent(`#` / sum(`#`))
+    ),
+  df_cluster_staffing_class_nogov |>
+    filter(
+      IN_Type != "WKG",
+      Function == "IM"
+    ) |>
+    group_by(
+      Country = IN_Operation,
+      CL_Sectors
+    ) |>
+    summarize(
+      dedicated_imo = any(Role_analysis == "Co-lead/lead" & Staffing == "Dedicated"),
+      .groups = "drop_last"
+    ) |>
+    summarize(
+      `% of clusters with dedicated IMO nationally` = mean(dedicated_imo)
+    ) |>
+    arrange(
+      desc(
+        `% of clusters with dedicated IMO nationally`
+      )
+    ) |>
+    mutate(
+      `% of clusters with dedicated IMO nationally` = scales::percent(`% of clusters with dedicated IMO nationally`)
+    ),
+  df_cluster_staffing_class_nogov |>
+    filter(
+      IN_Type != "WKG",
+      Function == "IM"
+    ) |>
+    count(
+      `IMO staffing all leads` = Staffing,
+      name = "#"
+    ) |>
+    mutate(
+      `%` = scales::percent(`#` / sum(`#`))
+    )
+)
+
+write_swaps_data(
+  wb_cluster_analysis,
+  "Cluster staffing (nat, no gov)",
+  join_list(cluster_staffing_nat_nogov)
+)
 
 ######################################
 #### CLUSTER STAFFING SUBNATIONAL ####
@@ -803,6 +1282,137 @@ write_swaps_data(
   join_list(cluster_staffing_subnat)
 )
 
+#####################################################
+#### CLUSTER STAFFING SUBNATIONAL: NO GOVERNMENT ####
+#####################################################
+
+cluster_staffing_subnat_nogov <- list(
+  df_clsub_staffing_class_nogov |>
+    filter(
+      IN_Type != "WKG",
+      Role_analysis == "Co-lead/lead",
+      Function == "CD"
+    ) |>
+    count(
+      `Coordinator coverage (subnational)` = Staffing,
+      name = "#"
+    ) |>
+    mutate(
+      `%` = scales::percent(`#` / sum(`#`))
+    ),
+  df_clsub_staffing_class_nogov |>
+    filter(
+      IN_Type != "WKG",
+      Function == "CD"
+    ) |>
+    group_by(
+      Country = IN_Operation,
+      submissionId,
+      Calc
+    ) |>
+    summarize(
+      dedicated_coordinator = any(Role_analysis == "Co-lead/lead" & Staffing == "Dedicated"),
+      .groups = "drop"
+    ) |>
+    group_by(
+      Country
+    ) |>
+    summarize(
+      `# of clusters with dedicated lead/co-lead subnationally` = sum(dedicated_coordinator),
+      `% of clusters with dedicated lead/co-lead subnationally` = mean(dedicated_coordinator)
+    ) |>
+    arrange(
+      desc(
+        `% of clusters with dedicated lead/co-lead subnationally`
+      )
+    ) |>
+    mutate(
+      `% of clusters with dedicated lead/co-lead subnationally` = scales::percent(`% of clusters with dedicated lead/co-lead subnationally`)
+    ),
+  df_clsub_staffing_class_nogov |>
+    mutate(
+      Sectors = strsplit(CL_Sectors, " "),
+    ) |>
+    unnest(
+      Sectors
+    ) |>
+    filter(
+      IN_Type != "WKG",
+      Function == "CD"
+    ) |>
+    group_by(
+      Sectors,
+      submissionId,
+      Calc
+    ) |>
+    summarize(
+      dedicated_coordinator = any(Role_analysis == "Co-lead/lead" & Staffing == "Dedicated"),
+      .groups = "drop"
+    ) |>
+    group_by(
+      Sectors
+    ) |>
+    summarize(
+      `# of clusters with dedicated lead/co-lead subnationally` = sum(dedicated_coordinator),
+      `% of clusters with dedicated lead/co-lead subnationally` = mean(dedicated_coordinator)
+    ) |>
+    arrange(
+      desc(
+        `% of clusters with dedicated lead/co-lead subnationally`
+      )
+    ) |>
+    mutate(
+      `% of clusters with dedicated lead/co-lead subnationally` = scales::percent(`% of clusters with dedicated lead/co-lead subnationally`)
+    ),
+  df_clsub_staffing_class_nogov |>
+    filter(
+      IN_Type != "WKG",
+      Role_analysis == "Co-lead/lead",
+      Function == "IM"
+    ) |>
+    count(
+      `IM staffing (subnational)` = Staffing,
+      name = "#"
+    ) |>
+    mutate(
+      `%` = scales::percent(`#` / sum(`#`))
+    ),
+  df_clsub_staffing_class_nogov |>
+    filter(
+      IN_Type != "WKG",
+      Function == "IM"
+    ) |>
+    group_by(
+      Country = IN_Operation,
+      submissionId,
+      Calc
+    ) |>
+    summarize(
+      dedicated_imo = any(Role_analysis == "Co-lead/lead" & Staffing == "Dedicated"),
+      .groups = "drop"
+    ) |>
+    group_by(
+      Country
+    ) |>
+    summarize(
+      `% of clusters with dedicated IMO subnationally` = mean(dedicated_imo)
+    ) |>
+    arrange(
+      desc(
+        `% of clusters with dedicated IMO subnationally`
+      )
+    ) |>
+    mutate(
+      `% of clusters with dedicated IMO subnationally` = scales::percent(`% of clusters with dedicated IMO subnationally`)
+    )
+)
+
+write_swaps_data(
+  wb_cluster_analysis,
+  "Cluster staffing (SN, no gov)",
+  join_list(cluster_staffing_subnat_nogov)
+)
+
 ############################
 #### CLUSTER MEMBERSHIP ####
 ############################
@@ -887,7 +1497,8 @@ technical_working_group <- list(
     distinct(
       IN_Operation,
       year,
-      TechName
+      TechName,
+      submissionId
     ) |>
     summarize(
       `Total # TWG` = n()
