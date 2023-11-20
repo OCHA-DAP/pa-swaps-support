@@ -766,7 +766,6 @@ write_swaps_data(
 ###################################
 #### CLUSTER STAFFING NATIONAL ####
 ###################################
-
 cluster_staffing_nat <- list(
   df_cluster_staffing_class |>
     filter(
@@ -781,18 +780,12 @@ cluster_staffing_nat <- list(
       `%` = scales::percent(`#` / sum(`#`))
     ),
   df_cluster_staffing_class |>
-    mutate(
-      Sectors = strsplit(CL_Sectors, " ")
-    ) |>
-    unnest(
-      Sectors
-    ) |>
     filter(
       Function == "CD"
     ) |>
     group_by(
-      Sectors,
-      IN_Operation
+      Country = IN_Operation,
+      CL_SectorsID
     ) |>
     summarize(
       dedicated_coordinator = any(Role_analysis == "Co-lead/lead" & Staffing == "Dedicated"),
@@ -822,11 +815,15 @@ cluster_staffing_nat <- list(
     ) |>
     group_by(
       Sectors,
+      CL_SectorsID,
       IN_Operation
     ) |>
     summarize(
       dedicated_coordinator = any(Role_analysis == "Co-lead/lead" & Staffing == "Dedicated"),
-      .groups = "drop_last"
+      .groups = "drop"
+    ) |>
+    group_by(
+      Sectors
     ) |>
     summarize(
       `# of clusters with dedicated lead/co-lead nationally` = sum(dedicated_coordinator),
@@ -869,13 +866,14 @@ cluster_staffing_nat <- list(
     ) |>
     group_by(
       Country = IN_Operation,
-      CL_Sectors
+      CL_SectorsID
     ) |>
     summarize(
       dedicated_imo = any(Role_analysis == "Co-lead/lead" & Staffing == "Dedicated"),
       .groups = "drop_last"
     ) |>
     summarize(
+      `% of clusters with dedicated IMO nationally` = sum(dedicated_imo),
       `% of clusters with dedicated IMO nationally` = mean(dedicated_imo)
     ) |>
     arrange(
@@ -898,7 +896,6 @@ cluster_staffing_nat <- list(
       `%` = scales::percent(`#` / sum(`#`))
     )
 )
-
 write_swaps_data(
   wb_cluster_analysis,
   "Cluster staffing (national)",
@@ -1149,6 +1146,7 @@ cluster_staffing_subnat <- list(
       Country
     ) |>
     summarize(
+      `% of clusters with dedicated IMO subnationally` = sum(dedicated_imo),
       `% of clusters with dedicated IMO subnationally` = mean(dedicated_imo)
     ) |>
     arrange(
