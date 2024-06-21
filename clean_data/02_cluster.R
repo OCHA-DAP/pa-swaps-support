@@ -5,29 +5,67 @@ source(
   )
 )
 
+library(httr)
+
 ##########################
 #### LOAD INPUT JSONS ####
 ##########################
 
-df_cluster <- read_json(
-  file.path(
-    input_dir,
-    "Cluster data.json"
-  ),
-  simplifyVector = TRUE
-) %>%
+df_cluster <- GET(
+  url = "https://api.hpc.tools/v2/reportingwindows/assignments/export?type=operationCluster",
+  authenticate(
+    "hid",
+    password = Sys.getenv("HPC_TOOLS_TOKEN")
+  )
+) |>
+  content(
+    as = "text"
+  ) |>
+  jsonlite::fromJSON() %>%
   pluck(1) %>%
   as_tibble() %>%
   mutate(
     year = 2019 + reportingWindowId,
+    IN_Operation_short = !(IN_Operation %in% c("SLV", "GTM", "PAK")),
     CL_SectorsID = ifelse(
       CL_Sectors == "FSC" & IN_Operation == "ETH" & str_detect(CL_Name, "Agriculture"),
       "FSC-AG",
       CL_Sectors
+    ),
+    drop_response = case_when(
+      IN_Operation == "BDI" & CL_Sectors == "PRO-HLP" ~ TRUE,
+      IN_Operation == "BDI" & CL_Sectors == "PRO-GBV" ~ TRUE,
+      IN_Operation == "CMR" & CL_Sectors == "ERY" ~ TRUE,
+      IN_Operation == "ETH" & CL_Sectors == "PRO-CPN PRO-GBV" ~ TRUE,
+      IN_Operation == "ETH" & CL_Sectors == "TEL" ~ TRUE,
+      IN_Operation == "ETH" & CL_Sectors == "PRO-HLP" ~ TRUE,
+      IN_Operation == "HTI" & CL_Sectors == "TEL" ~ TRUE,
+      IN_Operation == "HTI" & CL_Sectors == "SHL" ~ TRUE,
+      IN_Operation == "LBY" & CL_Sectors == "LOG" ~ TRUE,
+      IN_Operation == "LBY" & CL_Sectors == "HEA" ~ TRUE,
+      IN_Operation == "LBY" & CL_Sectors == "EDU PRO-CPN WSH" ~ TRUE, # Randa didn't use this one
+      IN_Operation == "LBY" & CL_Sectors == "SHL" ~ TRUE,
+      IN_Operation == "PSE" & CL_Sectors == "LOG" ~ TRUE,
+      IN_Operation == "SYR-GZ" & CL_Sectors == "LOG" ~ TRUE, # Randa didn't use this one
+      IN_Operation == "UKR" & CL_Sectors == "HEA" ~ TRUE,
+      IN_Operation == "ZWE" & CL_Sectors == "HEA" ~ TRUE,
+      is.na(CL_Sectors) & is.na(IN_Type) ~ TRUE,
+      is.na(IN_TypeStrEn) ~ TRUE,
+      .default = FALSE
+    ),
+    CL_Sectors = ifelse(
+      IN_Operation == "ETH" & CL_Sectors == "FSC-AG",
+      "FSC",
+      CL_Sectors
     )
   ) %>%
   filter(
-    year > 2020
+    year > 2021,
+    !(IN_Operation %in% c("SYR-RG", "SYR-NE", "LBN", "PHL", "PFC", "SDN")),
+    !drop_response
+  ) |>
+  arrange(
+    IN_Operation
   )
 
 ######################
@@ -47,6 +85,7 @@ df_cluster_wide <- df_cluster %>%
   ) %>%
   select(
     IN_Operation,
+    IN_Operation_short,
     CL_SectorsID,
     CL_Sectors,
     CL_SectorsOther,
@@ -54,53 +93,172 @@ df_cluster_wide <- df_cluster %>%
     everything(),
     -reportingWindowId,
     -where(is.list)
-  ) %>%
-  pivot_wider(
-    id_cols = IN_Operation:IN_Type,
-    names_from = year,
-    values_from = -c(names(.)[1:5], "year"),
-    names_glue = "{.value}_{year}"
-  ) %>%
-  mutate(
-    across(
-      .cols = everything(),
-      .fns = as.character
-    )
-  ) %>%
+  ) |>
   arrange(
     IN_Operation,
     CL_SectorsID
   )
 
-write_swaps_yearly_data(
+write_swaps_data(
   wb = wb_clusters,
   sheet = "Cluster",
   df = df_cluster_wide
 )
 
-# there are some empty responses but with submission IDs and sometimes even
-# a bit more info (like respondent, but no actual info)
-# so storing these separately
+#################################
+#### CLUSTER LEADS: CL_leads ####
+#################################
 
-df_cluster_incomplete <- df_cluster %>%
+df_cluster_leadership <- df_cluster_wide |>
+  select(
+    IN_Operation,
+    IN_Operation_short,
+    IN_Type,
+    CL_SectorsID,
+    CL_Sectors,
+    CL_OrgsNum,
+    matches("CL_Org[0-9]{1}(Role|Type)")
+  ) |>
+  pivot_longer(
+    cols = matches("CL_Org[0-9]{1}(Role|Type)"),
+    names_to = c("OrgNum", "name"),
+    names_pattern = "CL_Org([0-9]{1})(.*)"
+  ) |>
   filter(
-    is.na(CL_Sectors)
-  ) %>%
-  arrange(
-    IN_Operation
-  )
+    !is.na(value)
+  ) |>
+  pivot_wider()
 
-# save to a workbook
-
-addWorksheet(
-  wb_clusters,
-  "ClusterIncomplete"
+write_swaps_data(
+  wb = wb_clusters,
+  sheet = "CL_Leads",
+  df = df_cluster_leadership
 )
 
-writeData(
-  wb_clusters,
-  "ClusterIncomplete",
-  df_cluster_incomplete
+#################################
+#### CLUSTER LEADS: CL_leads ####
+#################################
+
+df_cluster_staffing <- df_cluster_wide |>
+  select(
+    IN_Operation,
+    IN_Operation_short,
+    IN_Type,
+    CL_SectorsID,
+    CL_OrgsNum,
+    matches("CL_Org[0-9]{1}(Staff)")
+  ) |>
+  pivot_longer(
+    cols = matches("CL_Org[0-9]{1}(Staff)"),
+    names_to = c("OrgNum", "Function", "name"),
+    names_pattern = "CL_Org([0-9]{1})Staff([A-Z]{2})(.*)"
+  ) |>
+  filter(
+    !is.na(value)
+  ) |>
+  pivot_wider() |>
+  left_join(
+    df_cluster_leadership,
+    by = c("IN_Operation", "IN_Operation_short", "IN_Type", "CL_SectorsID", "CL_OrgsNum", "OrgNum")
+  )
+
+write_swaps_data(
+  wb = wb_clusters,
+  sheet = "CL_Staffing",
+  df = df_cluster_staffing
+)
+
+##################################################
+#### CLUSTER STAFFING NATIONAL CLASSIFICATION ####
+##################################################
+
+df_cluster_staffing_class <- df_cluster_staffing |>
+  filter(
+    !is.na(Full)
+  ) |>
+  mutate(
+    across(
+      .cols = c(Full, Dbl, Vac, NoP),
+      .fns = as.numeric
+    ),
+    Role_analysis = ifelse(
+      Role %in% c("LEAD", "COLEAD"),
+      "Co-lead/lead",
+      "Co-chair"
+    )
+  ) |>
+  group_by(
+    IN_Operation,
+    IN_Operation_short,
+    IN_Type,
+    CL_SectorsID,
+    CL_Sectors,
+    Function,
+    Role_analysis
+  ) |>
+  summarize(
+    Staffing = case_when(
+      any(Full >= 9) ~ "Dedicated",
+      sum(Full >= 6) >= 2 ~ "Dedicated",
+      any(Full >= 3) ~ "Partial",
+      any(Dbl >= 9) ~ "Double",
+      sum(Dbl >= 6) >= 2 ~ "Double",
+      any(NoP + Vac >= 3) ~ "Vacant"
+    ),
+    .groups = "drop"
+  )
+
+write_swaps_data(
+  wb = wb_clusters,
+  sheet = "CL_Staffing_Classification",
+  df = df_cluster_staffing_class
+)
+
+##########################################################
+#### CLUSTER STAFFING NATIONAL CLASSIFICATION: NO GOV ####
+##########################################################
+
+df_cluster_staffing_class_nogov <- df_cluster_staffing |>
+  filter(
+    !is.na(Full),
+    !(Type %in% c("NTA", "LCA"))
+  ) |>
+  mutate(
+    across(
+      .cols = c(Full, Dbl, Vac, NoP),
+      .fns = as.numeric
+    ),
+    Role_analysis = ifelse(
+      Role %in% c("LEAD", "COLEAD"),
+      "Co-lead/lead",
+      "Co-chair"
+    )
+  ) |>
+  group_by(
+    IN_Operation,
+    IN_Operation_short,
+    IN_Type,
+    CL_SectorsID,
+    CL_Sectors,
+    Function,
+    Role_analysis
+  ) |>
+  summarize(
+    Staffing = case_when(
+      any(Full >= 9) ~ "Dedicated",
+      sum(Full >= 6) >= 2 ~ "Dedicated",
+      any(Full >= 3) ~ "Partial",
+      any(Dbl >= 9) ~ "Double",
+      sum(Dbl >= 6) >= 2 ~ "Double",
+      any(NoP + Vac >= 3) ~ "Vacant"
+    ),
+    .groups = "drop"
+  )
+
+write_swaps_data(
+  wb = wb_clusters,
+  sheet = "CL_Staffing_Class_NoGov",
+  df = df_cluster_staffing_class_nogov
 )
 
 #######################################
@@ -122,19 +280,12 @@ df_clsub_count <- df_cluster %>%
   type_convert() %>%
   group_by(IN_Operation, year) %>%
   summarize(
-    `0` = as.character(sum(`0`, na.rm = TRUE)),
-    `1` = as.character(sum(`1`, na.rm = TRUE)),
+    `0` = sum(`0`, na.rm = TRUE),
+    `1` = sum(`1`, na.rm = TRUE),
     .groups = "drop"
-  ) %>%
-  pivot_wider(
-    names_from = year,
-    values_from = c(`0`, `1`)
-  ) %>%
-  arrange(
-    IN_Operation
   )
 
-write_swaps_yearly_data(
+write_swaps_data(
   wb = wb_clusters,
   sheet = "CLSub_count",
   df = df_clsub_count
@@ -149,13 +300,15 @@ write_swaps_yearly_data(
 df_clsub <- df_cluster %>%
   transmute(
     IN_Operation,
+    IN_Operation_short,
+    CL_Sectors,
     submissionId,
     year,
     CLSub = map(
       .x = CLSub,
       .f = \(x) {
         if (!is.null(x)) {
-          mutate(x, across(.fns = as.character))
+          mutate(x, across(.fns = as.character, .cols = everything()))
         } else {
           NULL
         }
@@ -172,11 +325,12 @@ df_clsub <- df_cluster %>%
   ) %>%
   mutate(
     across(
-      .fns = as.character
+      .fns = as.character,
+      .cols = everything()
     )
   ) %>%
   pivot_longer(
-    -c(IN_Operation, Calc, Loc, LocOther, Area, submissionId, year, OrgsNum, OrgsFootnote),
+    -c(IN_Operation, IN_Operation_short, CL_Sectors, Calc, Loc, LocOther, Area, submissionId, year, OrgsNum, OrgsFootnote),
     names_pattern = "Org([1-3]{1})(.*)",
     names_to = c("Num", "name")
   ) %>%
@@ -190,6 +344,14 @@ df_clsub <- df_cluster %>%
     year,
     Loc,
     Area
+  ) %>%
+  left_join(
+    transmute(
+      df_cluster_wide,
+      submissionId = as.character(submissionId),
+      IN_Type
+    ),
+    by = c("submissionId")
   )
 
 # save to a workbook
@@ -205,74 +367,129 @@ writeData(
   df_clsub
 )
 
-# now create a comparison sheet that draws comparisons between the first
-# set of columns with this data
+###################################
+#### CLUSTER SUBGROUP STAFFING ####
+###################################
 
-df_clsub_check <- df_clsub %>%
+df_clsub_staffing <- df_clsub |>
   select(
     IN_Operation,
-    Loc,
-    LocOther,
-    Area,
-    year,
-    Type,
-    Name,
+    IN_Operation_short,
+    IN_Type,
+    CL_Sectors,
+    submissionId,
+    Calc,
+    Num,
     Role,
-    year
-  )
+    Type,
+    starts_with("Staff")
+  ) |>
+  pivot_longer(
+    cols = starts_with("Staff"),
+    names_to = c("Function", "name"),
+    names_pattern = "Staff([A-Z]{2})(.*)"
+  ) |>
+  filter(
+    !is.na(value),
+    name != "Calc"
+  ) |>
+  pivot_wider()
 
-df_clsub_check_2022 <- filter(df_clsub_check, year == 2022)
-df_clsub_check_2021 <- filter(df_clsub_check, year == 2021)
-
-df_clsub_check_final <- df_clsub_check_2022 %>%
-  left_join(
-    df_clsub_check_2021 %>%
-      rename(
-        Role2021 = Role
-      ) %>%
-      select(
-        -year
-      ) %>%
-      mutate(
-        org_check = ""
-      ),
-    by = c("IN_Operation", "Loc", "LocOther", "Area", "Type", "Name"),
-    relationship = "many-to-many"
-  ) %>%
-  mutate(
-    new_role = ifelse(Role != Role2021, paste("New role in 2022, was", Role2021), NA),
-    org_check = ifelse(is.na(org_check), "New org in 2022", NA)
-  ) %>%
-  select(
-    -Role2021
-  ) %>%
-  bind_rows(
-    anti_join(
-      df_clsub_check_2021 %>% mutate(org_check = "Org removed in 2022"),
-      df_clsub_check_2022,
-      by = c("IN_Operation", "Loc", "LocOther", "Area", "Type", "Name")
-    )
-  )
-
-# save to a workbook
-
-addWorksheet(
-  wb_clusters,
-  "CLSub_check"
-)
-
-writeData(
-  wb_clusters,
-  "CLSub_check",
-  df_clsub_check_final
-)
-
-conditionalFormatting(
+write_swaps_data(
   wb = wb_clusters,
-  sheet = "CLSub_check",
-  rows = 1:nrow(df_clsub_check_final) + 1,
-  cols = 9:10,
-  rule = 'I2<>""'
+  sheet = "CLSub_Staffing",
+  df = df_clsub_staffing
+)
+
+###################################
+#### CLUSTER SUBGROUP STAFFING ####
+###################################
+
+df_clsub_staffing_class <- df_clsub_staffing |>
+  mutate(
+    across(
+      .cols = c(Full, Dbl, Vac, NoP),
+      .fns = as.numeric
+    ),
+    Role_analysis = ifelse(
+      Role %in% c("LEAD", "COLEAD"),
+      "Co-lead/lead",
+      "Co-chair"
+    )
+  ) |>
+  group_by(
+    IN_Operation,
+    IN_Operation_short,
+    IN_Type,
+    CL_Sectors,
+    submissionId,
+    Calc,
+    Function,
+    Role_analysis
+  ) |>
+  summarize(
+    Staffing = case_when(
+      any(Full >= 9) ~ "Dedicated",
+      sum(Full >= 6) >= 2 ~ "Dedicated",
+      any(Full >= 3) ~ "Partial",
+      any(Dbl >= 9) ~ "Double",
+      sum(Dbl >= 6) >= 2 ~ "Double",
+      any(NoP + Vac >= 3) ~ "Vacant"
+    ),
+    .groups = "drop"
+  )
+
+write_swaps_data(
+  wb = wb_clusters,
+  sheet = "CLSub_Staffing_Class",
+  df = df_clsub_staffing_class
+)
+
+##################################################
+#### CLUSTER SUBGROUP STAFFING: NO GOVERNMENT ####
+##################################################
+
+df_clsub_staffing_class_nogov <- df_clsub_staffing |>
+  filter(
+    !(Type %in% c("NTA", "LCA"))
+  ) |>
+  mutate(
+    across(
+      .cols = c(Full, Dbl, Vac, NoP),
+      .fns = as.numeric
+    ),
+    Role_analysis = ifelse(
+      Role %in% c("LEAD", "COLEAD"),
+      "Co-lead/lead",
+      "Co-chair"
+    )
+  ) |>
+  group_by(
+    IN_Operation,
+    IN_Operation_short,
+    IN_Type,
+    CL_Sectors,
+    submissionId,
+    Calc,
+    Function,
+    Role_analysis
+  ) |>
+  summarize(
+    Staffing = case_when(
+      any(Full >= 9) ~ "Dedicated",
+      sum(Full >= 6) >= 2 ~ "Dedicated",
+      any(Full >= 3) ~ "Partial",
+      any(Dbl >= 9) ~ "Double",
+      sum(Dbl >= 6) >= 2 ~ "Double",
+      any(NoP + Vac >= 3) ~ "Vacant"
+    ),
+    .groups = "drop"
+  )
+
+write_swaps_data(
+  wb = wb_clusters,
+  sheet = "CLSub_Staffing_Class_NoGov",
+  df = df_clsub_staffing_class_nogov
 )
 
 ########################################
@@ -284,6 +501,7 @@ conditionalFormatting(
 df_cltech_count <- df_cluster %>%
   select(
     IN_Operation,
+    IN_Operation_short,
     submissionId,
     year,
     CLTech_count
@@ -297,16 +515,9 @@ df_cltech_count <- df_cluster %>%
     `0` = as.character(sum(`0`, na.rm = TRUE)),
     `1` = as.character(sum(`1`, na.rm = TRUE)),
     .groups = "drop"
-  ) %>%
-  pivot_wider(
-    names_from = year,
-    values_from = c(`0`, `1`)
-  ) %>%
-  arrange(
-    IN_Operation
   )
 
-write_swaps_yearly_data(
+write_swaps_data(
   wb = wb_clusters,
   sheet = "CLTech_count",
   df = df_cltech_count
@@ -321,13 +532,17 @@ write_swaps_yearly_data(
 df_cltech <- df_cluster %>%
   transmute(
     IN_Operation,
+    IN_Operation_short,
+    IN_Type,
+    CL_SectorsID,
+    CL_Sectors,
     submissionId,
     year,
     CLTech = map(
       .x = CLTech,
       .f = \(x) {
         if (!is.null(x)) {
-          mutate(x, across(.fns = as.character))
+          mutate(x, across(.fns = as.character, .cols = everything()))
         } else {
           NULL
         }
@@ -347,11 +562,12 @@ df_cltech <- df_cluster %>%
   ) %>%
   mutate(
     across(
-      .fns = as.character
+      .fns = as.character,
+      .cols = everything()
     )
   ) %>%
   pivot_longer(
-    -c(IN_Operation, Calc, submissionId, year, OrgsNum, ToR, Desc, Ptcps, TechName),
+    -c(IN_Operation, IN_Operation_short, IN_Type, CL_SectorsID, CL_Sectors, Calc, submissionId, year, OrgsNum, ToR, Desc, Ptcps, TechName),
     names_pattern = "Org([1-3]{1})(.*)",
     names_to = c("Num", "name")
   ) %>%
