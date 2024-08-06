@@ -5,6 +5,8 @@ source(
   )
 )
 
+library(countrycode)
+
 #################################
 #### FILTERING TO SHORT LIST ####
 #################################
@@ -37,6 +39,25 @@ df_twg_randa <- readxl::read_excel(
     "Working group.xlsx"
   )
 )
+
+df_dedicated_randa <- readxl::read_excel(
+  file.path(
+    input_dir,
+    "data_checks_randa",
+    "RH dedicated analysis.xlsx"
+  ),
+  skip = 2
+) |>
+  transmute(
+    Country = `Cntry...1`,
+    IN_Operation = ifelse(
+      Country != "oPt",
+      countryname(Country, destination = "iso3c"),
+      "PSE"
+    ),
+    CL_Sectors = Cluster
+  )
+
 
 # cluster check
 
@@ -76,4 +97,48 @@ df_twg_randa |>
       "id" = "submissionId",
       "CL_TechCalc" = "Calc"
     )
+  )
+
+# dedication check
+
+df_my <- df_cluster_staffing_class |>
+  filter(
+    Function == "CD",
+    Staffing == "Dedicated",
+    Role_analysis == "Co-lead/lead"
+  ) |>
+  group_by(
+    IN_Operation
+  ) |>
+  summarize(
+    n = n()
+  ) |>
+  arrange(
+    desc(
+      n
+    )
+  )
+
+df_rand <- df_dedicated_randa |>
+  group_by(
+    IN_Operation
+  ) |>
+  summarize(
+    n = n()
+  ) |>
+  arrange(
+    desc(
+      n
+    )
+  )
+
+df_my |>
+  left_join(
+    df_rand |>
+      rename(
+        n_rand = n
+      )
+  ) |>
+  View(
+
   )

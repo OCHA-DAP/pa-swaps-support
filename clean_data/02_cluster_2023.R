@@ -11,6 +11,20 @@ library(httr)
 #### LOAD INPUT JSONS ####
 ##########################
 
+df_status <- GET(
+  url = "https://api.hpc.tools/v2/reportingwindows/assignments",
+  authenticate(
+    "hid",
+    password = Sys.getenv("HPC_TOOLS_TOKEN")
+  )
+) |>
+  content(
+    as = "text"
+  ) |>
+  jsonlite::fromJSON() |>
+  pluck(1) |>
+  as_tibble()
+
 df_cluster <- GET(
   url = "https://api.hpc.tools/v2/reportingwindows/assignments/export?type=operationCluster",
   authenticate(
@@ -26,46 +40,23 @@ df_cluster <- GET(
   as_tibble() %>%
   mutate(
     year = 2019 + reportingWindowId,
-    IN_Operation_short = !(IN_Operation %in% c("SLV", "GTM", "PAK")),
+    IN_Operation_short = !(IN_Operation %in% c("PAK", "SDN")),
     CL_SectorsID = ifelse(
       CL_Sectors == "FSC" & IN_Operation == "ETH" & str_detect(CL_Name, "Agriculture"),
       "FSC-AG",
       CL_Sectors
-    ),
-    drop_response = case_when(
-      IN_Operation == "BDI" & CL_Sectors == "PRO-HLP" ~ TRUE,
-      IN_Operation == "BDI" & CL_Sectors == "PRO-GBV" ~ TRUE,
-      IN_Operation == "CMR" & CL_Sectors == "ERY" ~ TRUE,
-      IN_Operation == "ETH" & CL_Sectors == "PRO-CPN PRO-GBV" ~ TRUE,
-      IN_Operation == "ETH" & CL_Sectors == "TEL" ~ TRUE,
-      IN_Operation == "ETH" & CL_Sectors == "PRO-HLP" ~ TRUE,
-      IN_Operation == "HTI" & CL_Sectors == "TEL" ~ TRUE,
-      IN_Operation == "HTI" & CL_Sectors == "SHL" ~ TRUE,
-      IN_Operation == "LBY" & CL_Sectors == "LOG" ~ TRUE,
-      IN_Operation == "LBY" & CL_Sectors == "HEA" ~ TRUE,
-      IN_Operation == "LBY" & CL_Sectors == "EDU PRO-CPN WSH" ~ TRUE, # Randa didn't use this one
-      IN_Operation == "LBY" & CL_Sectors == "SHL" ~ TRUE,
-      IN_Operation == "PSE" & CL_Sectors == "LOG" ~ TRUE,
-      IN_Operation == "SYR-GZ" & CL_Sectors == "LOG" ~ TRUE, # Randa didn't use this one
-      IN_Operation == "UKR" & CL_Sectors == "HEA" ~ TRUE,
-      IN_Operation == "ZWE" & CL_Sectors == "HEA" ~ TRUE,
-      is.na(CL_Sectors) & is.na(IN_Type) ~ TRUE,
-      is.na(IN_TypeStrEn) ~ TRUE,
-      .default = FALSE
-    ),
-    CL_Sectors = ifelse(
-      IN_Operation == "ETH" & CL_Sectors == "FSC-AG",
-      "FSC",
-      CL_Sectors
     )
   ) %>%
   filter(
-    year == 2022,
-    !(IN_Operation %in% c("SYR-RG", "SYR-NE", "LBN", "PHL", "PFC", "SDN")),
-    !drop_response
+    year > 2022,
+    !(IN_Operation %in% c("BDI", "GTM", "SLV", "LBN", "PSE", "PFC", "PHL", "SYR-NE", "SYR-RG", "ZWE"))
   ) |>
   arrange(
     IN_Operation
+  ) |>
+  left_join(
+    df_status,
+    by = c("submissionId" = "assignmentId")
   )
 
 ######################
@@ -259,36 +250,6 @@ write_swaps_data(
   wb = wb_clusters,
   sheet = "CL_Staffing_Class_NoGov",
   df = df_cluster_staffing_class_nogov
-)
-
-#######################################
-#### CLUSTER SUBGROUP: CLSub_count ####
-#######################################
-
-# unclear what this is but just using to count up total
-# for each year and operation
-df_clsub_count <- df_cluster %>%
-  select(
-    IN_Operation,
-    submissionId,
-    year,
-    CLSub_count
-  ) %>%
-  unnest(
-    CLSub_count
-  ) %>%
-  type_convert() %>%
-  group_by(IN_Operation, year) %>%
-  summarize(
-    `0` = sum(`0`, na.rm = TRUE),
-    `1` = sum(`1`, na.rm = TRUE),
-    .groups = "drop"
-  )
-
-write_swaps_data(
-  wb = wb_clusters,
-  sheet = "CLSub_count",
-  df = df_clsub_count
 )
 
 #################################
@@ -492,37 +453,6 @@ write_swaps_data(
   df = df_clsub_staffing_class_nogov
 )
 
-########################################
-#### CLUSTER SUBGROUP: CLTech_count ####
-########################################
-
-# unclear what this is but just using to count up total
-# for each year and operation
-df_cltech_count <- df_cluster %>%
-  select(
-    IN_Operation,
-    IN_Operation_short,
-    submissionId,
-    year,
-    CLTech_count
-  ) %>%
-  unnest(
-    CLTech_count
-  ) %>%
-  type_convert() %>%
-  group_by(IN_Operation, year) %>%
-  summarize(
-    `0` = as.character(sum(`0`, na.rm = TRUE)),
-    `1` = as.character(sum(`1`, na.rm = TRUE)),
-    .groups = "drop"
-  )
-
-write_swaps_data(
-  wb = wb_clusters,
-  sheet = "CLTech_count",
-  df = df_cltech_count
-)
-
 ##################################
 #### CLUSTER SUBGROUP: CLTech ####
 ##################################
@@ -603,6 +533,6 @@ writeData(
 
 saveWorkbook(
   wb = wb_clusters,
-  file = file.path(output_dir, "swaps_clusters_data.xlsx"),
+  file = file.path(output_dir, "swaps_clusters_data_2023.xlsx"),
   overwrite = TRUE
 )
